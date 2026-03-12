@@ -1,0 +1,135 @@
+<section class="rounded-2xl bg-white p-5 shadow-sm">
+  <div class="mb-4 flex items-center justify-between">
+    <h2 class="text-lg font-semibold text-gray-800">Danh sách category</h2>
+    <span class="text-sm text-gray-500">Tổng: {{ categories.length }} bản ghi</span>
+  </div>
+
+  @if (loading) {
+    <div class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
+      Đang tải dữ liệu...
+    </div>
+  }
+
+  @if (!loading && error) {
+    <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-8 text-center text-sm text-red-600">
+      {{ error }}
+    </div>
+  }
+
+  @if (!loading && !error && categories.length > 0) {
+    <div class="overflow-x-auto">
+      <table class="min-w-full overflow-hidden rounded-2xl">
+        <thead>
+        <tr class="bg-gray-50 text-left text-sm text-gray-600">
+          <th class="border-b border-gray-200 px-4 py-3 font-semibold">ID</th>
+          <th class="border-b border-gray-200 px-4 py-3 font-semibold">Param Name</th>
+          <th class="border-b border-gray-200 px-4 py-3 font-semibold">Param Value</th>
+          <th class="border-b border-gray-200 px-4 py-3 font-semibold">Param Type</th>
+          <th class="border-b border-gray-200 px-4 py-3 font-semibold">Component Code</th>
+          <th class="border-b border-gray-200 px-4 py-3 font-semibold">Effective Date</th>
+          <th class="border-b border-gray-200 px-4 py-3 font-semibold">End Effective Date</th>
+          <th class="border-b border-gray-200 px-4 py-3 font-semibold">Status</th>
+          <th class="border-b border-gray-200 px-4 py-3 font-semibold">Is Active</th>
+          <th class="border-b border-gray-200 px-4 py-3 font-semibold">Hành động</th>
+        </tr>
+        </thead>
+
+        <tbody class="bg-white text-sm text-gray-700">
+          @for (item of categories; track item.id) {
+            <tr class="hover:bg-gray-50/70">
+              <td class="border-b border-gray-100 px-4 py-3">{{ item.id }}</td>
+              <td class="border-b border-gray-100 px-4 py-3">{{ item.paramName || '-' }}</td>
+              <td class="border-b border-gray-100 px-4 py-3">{{ item.paramValue || '-' }}</td>
+              <td class="border-b border-gray-100 px-4 py-3">{{ item.paramType || '-' }}</td>
+              <td class="border-b border-gray-100 px-4 py-3">{{ item.componentCode || '-' }}</td>
+              <td class="border-b border-gray-100 px-4 py-3">{{ item.effectiveDate || '-' }}</td>
+              <td class="border-b border-gray-100 px-4 py-3">{{ item.endEffectiveDate || '-' }}</td>
+
+              <td class="border-b border-gray-100 px-4 py-3">
+                <span
+                  class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                  [ngClass]="getStatusClass(item.status ?? 0)"
+                >
+                  {{ getStatusLabel(item.status ?? 0) }}
+                </span>
+              </td>
+
+              <td class="border-b border-gray-100 px-4 py-3">
+                <span
+                  class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                  [ngClass]="item.isActive === 1 ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'"
+                >
+                  {{ item.isActive === 1 ? 'Hoạt động' : 'Không hoạt động' }}
+                </span>
+              </td>
+
+              <td class="border-b border-gray-100 px-4 py-3">
+                <div class="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    (click)="edit.emit(item)"
+                    class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Sửa
+                  </button>
+
+                  <button
+                    type="button"
+                    (click)="copy.emit(item)"
+                    class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-50"
+                  >
+                    Sao chép
+                  </button>
+
+                  @if (canSubmit(item)) {
+                    <button
+                      type="button"
+                      (click)="viewSubmit.emit(item)"
+                      class="rounded-lg bg-[#0d8b89] px-3 py-1.5 text-xs font-medium text-white"
+                    >
+                      Gửi duyệt
+                    </button>
+                  }
+
+                  @if (canApprove(item)) {
+                    <button
+                      type="button"
+                      (click)="viewApprove.emit(item)"
+                      class="rounded-lg bg-[#d8a126] px-3 py-1.5 text-xs font-medium text-white"
+                    >
+                      Phê duyệt
+                    </button>
+                  }
+
+                  @if (canCancelApprove(item)) {
+                    <button
+                      type="button"
+                      (click)="viewCancelApprove.emit(item)"
+                      class="rounded-lg bg-[#1f9d55] px-3 py-1.5 text-xs font-medium text-white"
+                    >
+                      Hủy duyệt
+                    </button>
+                  }
+
+                  <button
+                    type="button"
+                    (click)="delete.emit(item)"
+                    class="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
+                  >
+                    Xóa
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @if (!loading && categories.length === 0 && !error) {
+    <div class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-8 text-center text-sm text-gray-500">
+      Chưa có dữ liệu
+    </div>
+  }
+</section>

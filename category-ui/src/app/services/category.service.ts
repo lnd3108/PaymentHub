@@ -37,4 +37,20 @@ export class CategoryService{
   search(data: CategorySearch): Observable<Category[]>{
     return this.http.post<Category[]>(`${this.apiUrl}/search`, data);
   }
+
+  submit(id: number) {
+    return this.http.post<Category>(`${this.apiUrl}/${id}/submit`, {});
+  }
+
+  approve(id: number) {
+    return this.http.post<Category>(`${this.apiUrl}/${id}/approve`, {});
+  }
+
+  reject(id: number, data: { reason: string }) {
+    return this.http.post<Category>(`${this.apiUrl}/${id}/reject`, data);
+  }
+
+  cancelApprove(id: number) {
+    return this.http.post<Category>(`${this.apiUrl}/${id}/cancel-approve`, {});
+  }
 }

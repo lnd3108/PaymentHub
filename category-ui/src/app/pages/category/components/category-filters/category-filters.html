@@ -1,0 +1,75 @@
+<section class="rounded-2xl bg-white p-5 shadow-sm">
+  <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+    <div>
+      <label class="mb-2 block text-sm font-medium text-gray-700">Param Name</label>
+      <input
+        type="text"
+        [(ngModel)]="filters.paramName"
+        class="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-teal-600"
+        placeholder="Nhập Param Name"
+      />
+    </div>
+
+    <div>
+      <label class="mb-2 block text-sm font-medium text-gray-700">Param Value</label>
+      <input
+        type="text"
+        [(ngModel)]="filters.paramValue"
+        class="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-teal-600"
+        placeholder="Nhập Param Value"
+      />
+    </div>
+
+    <div>
+      <label class="mb-2 block text-sm font-medium text-gray-700">Param Type</label>
+      <input
+        type="text"
+        [(ngModel)]="filters.paramType"
+        class="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-teal-600"
+        placeholder="Nhập Param Type"
+      />
+    </div>
+
+    <div>
+      <label class="mb-2 block text-sm font-medium text-gray-700">Status</label>
+      <select
+        [(ngModel)]="filters.status"
+        class="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-teal-600"
+      >
+        @for (option of statusOptions; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </div>
+
+    <div>
+      <label class="mb-2 block text-sm font-medium text-gray-700">Is Active</label>
+      <select
+        [(ngModel)]="filters.isActive"
+        class="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-teal-600"
+      >
+        @for (option of activeOptions; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <div class="mt-5 flex flex-wrap items-center justify-end gap-3">
+    <button
+      type="button"
+      (click)="onReset()"
+      class="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-gray-700 hover:bg-gray-50"
+    >
+      Xóa bộ lọc
+    </button>
+
+    <button
+      type="button"
+      (click)="onSearch()"
+      class="rounded-lg bg-teal-700 px-5 py-2.5 font-medium text-white hover:bg-teal-800"
+    >
+      Tìm kiếm
+    </button>
+  </div>
+</section>

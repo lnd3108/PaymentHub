@@ -1,22 +1,29 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { CategoryService } from '../../../services/category.service';
 import { Category } from '../../../models/category.models';
 import { ToastrService } from 'ngx-toastr';
 import Swal from 'sweetalert2';
+import { CategoryFiltersComponent } from '../components/category-filters/category-filters';
+import { CategoryTableComponent } from '../components/category-table/category-table';
+import { CategoryFormModalComponent } from '../components/category-form-modal/category-form-modal';
+import {CategoryDetailActionModalComponent } from '../components/category-detail-action-modal/category-detail-action-modal';
 
 @Component({
   selector: 'app-category-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [
+    CommonModule,
+    CategoryFiltersComponent,
+    CategoryTableComponent,
+    CategoryFormModalComponent,
+  ],
   templateUrl: './category-list.html',
   styleUrl: './category-list.css',
 })
 export class CategoryList implements OnInit {
   private categoryService = inject(CategoryService);
   private toastr = inject(ToastrService);
-  private fb = inject(FormBuilder);
 
   categories: Category[] = [];
   allCategories: Category[] = [];
@@ -25,32 +32,17 @@ export class CategoryList implements OnInit {
   error = '';
 
   isModalOpen = false;
-  modalMode: 'create' | 'update' = 'create';
-  selectedCategoryId: number | null = null;
-
-  filters = {
-    paramName: '',
-    paramValue: '',
-    paramType: '',
-    status: '',
-    isActive: '',
-  };
+  modalMode: 'create' | 'update' | 'copy' = 'create';
+  selectedCategory: Category | null = null;
 
   statusOptions: { value: string; label: string }[] = [];
   activeOptions: { value: string; label: string }[] = [];
 
-  categoryForm = this.fb.group({
-    paramName: ['', [Validators.required]],
-    paramValue: ['', [Validators.required]],
-    paramType: ['', [Validators.required]],
-    description: [''],
-    componentCode: [''],
-    status: [1, [Validators.required]],
-    isActive: [1, [Validators.required]],
-    isDisplay: [1],
-    effectiveDate: [''],
-    endEffectiveDate: [''],
-  });
+  detailModalOpen = false;
+  detailMode: 'submit' | 'approve' | 'cancel-approve' = 'submit';
+  detailOldData: Category | null = null;
+  detailNewData: Category | null = null;
+  detailTarget: Category | null = null;
 
   ngOnInit(): void {
     this.loadCategories();
@@ -77,8 +69,16 @@ export class CategoryList implements OnInit {
   }
 
   buildFilterOptions(data: Category[]): void {
-    const uniqueStatuses = [...new Set(data.map((item) => item.status))].sort((a, b) => a - b);
-    const uniqueActives = [...new Set(data.map((item) => item.isActive))].sort((a, b) => a - b);
+    const statuses = data
+      .map((item) => item.status)
+      .filter((v): v is number => v !== null && v !== undefined);
+
+    const actives = data
+      .map((item) => item.isActive)
+      .filter((v): v is number => v !== null && v !== undefined);
+
+    const uniqueStatuses = [...new Set(statuses)].sort((a, b) => a - b);
+    const uniqueActives = [...new Set(actives)].sort((a, b) => a - b);
 
     this.statusOptions = [
       { value: '', label: 'Tất cả' },
@@ -97,101 +97,60 @@ export class CategoryList implements OnInit {
     ];
   }
 
-  searchCategories(): void {
-    const paramName = this.filters.paramName.trim().toLowerCase();
-    const paramValue = this.filters.paramValue.trim().toLowerCase();
-    const paramType = this.filters.paramType.trim().toLowerCase();
+  handleSearch(filters: {
+    paramName: string;
+    paramValue: string;
+    paramType: string;
+    status: string;
+    isActive: string;
+  }): void {
+    const paramName = filters.paramName.trim().toLowerCase();
+    const paramValue = filters.paramValue.trim().toLowerCase();
+    const paramType = filters.paramType.trim().toLowerCase();
 
-    const selectedStatus = this.filters.status === '' ? null : Number(this.filters.status);
-    const selectedIsActive = this.filters.isActive === '' ? null : Number(this.filters.isActive);
+    const selectedStatus = filters.status === '' ? null : Number(filters.status);
+    const selectedIsActive = filters.isActive === '' ? null : Number(filters.isActive);
 
     this.categories = this.allCategories.filter((item) => {
       const matchParamName = !paramName || item.paramName?.toLowerCase().includes(paramName);
-
       const matchParamValue = !paramValue || item.paramValue?.toLowerCase().includes(paramValue);
-
       const matchParamType = !paramType || item.paramType?.toLowerCase().includes(paramType);
-
       const matchStatus = selectedStatus === null || item.status === selectedStatus;
-
       const matchIsActive = selectedIsActive === null || item.isActive === selectedIsActive;
 
       return matchParamName && matchParamValue && matchParamType && matchStatus && matchIsActive;
     });
   }
 
-  resetFilters(): void {
-    this.filters = {
-      paramName: '',
-      paramValue: '',
-      paramType: '',
-      status: '',
-      isActive: '',
-    };
-
+  handleReset(): void {
     this.categories = [...this.allCategories];
   }
 
   openCreateModal(): void {
     this.modalMode = 'create';
-    this.selectedCategoryId = null;
-    this.categoryForm.reset({
-      paramName: '',
-      paramValue: '',
-      paramType: '',
-      description: '',
-      componentCode: '',
-      status: 1,
-      isActive: 1,
-      isDisplay: 1,
-      effectiveDate: '',
-      endEffectiveDate: '',
-    });
+    this.selectedCategory = null;
     this.isModalOpen = true;
   }
 
   openUpdateModal(item: Category): void {
     this.modalMode = 'update';
-    this.selectedCategoryId = item.id ?? null;
-
-    this.categoryForm.patchValue({
-      paramName: item.paramName ?? '',
-      paramValue: item.paramValue ?? '',
-      paramType: item.paramType ?? '',
-      description: item.description ?? '',
-      componentCode: item.componentCode ?? '',
-      status: item.status ?? 1,
-      isActive: item.isActive ?? 1,
-      isDisplay: item.isDisplay ?? 1,
-      effectiveDate: item.effectiveDate ?? '',
-      endEffectiveDate: item.endEffectiveDate ?? '',
-    });
-
+    this.selectedCategory = item;
     this.isModalOpen = true;
   }
 
   closeModal(): void {
     this.isModalOpen = false;
-    this.categoryForm.markAsPristine();
-    this.categoryForm.markAsUntouched();
+    this.selectedCategory = null;
   }
 
-  submitForm(): void {
-    if (this.categoryForm.invalid) {
-      this.categoryForm.markAllAsTouched();
-      this.toastr.warning('Vui lòng nhập đầy đủ thông tin bắt buộc', 'Cảnh báo');
-      return;
-    }
-
-    const payload = this.categoryForm.getRawValue() as Category;
-
+  handleSave(payload: Category): void {
     if (this.modalMode === 'create') {
       this.createCategory(payload);
       return;
     }
 
-    if (this.selectedCategoryId) {
-      this.updateCategory(this.selectedCategoryId, payload);
+    if (this.selectedCategory?.id) {
+      this.updateCategory(this.selectedCategory.id, payload);
     }
   }
 
@@ -223,8 +182,8 @@ export class CategoryList implements OnInit {
     });
   }
 
-  deleteCategory(id?: number): void {
-    if (!id) return;
+  deleteCategory(item: Category): void {
+    if (!item.id) return;
 
     Swal.fire({
       title: 'Xác nhận xóa?',
@@ -239,7 +198,7 @@ export class CategoryList implements OnInit {
     }).then((result) => {
       if (!result.isConfirmed) return;
 
-      this.categoryService.delete(id).subscribe({
+      this.categoryService.delete(item.id!).subscribe({
         next: () => {
           this.toastr.success('Xóa thành công', 'Thành công');
           this.loadCategories();
@@ -271,22 +230,136 @@ export class CategoryList implements OnInit {
     }
   }
 
-  getStatusClass(status: number): string {
-    switch (status) {
-      case 1:
-        return 'bg-blue-50 text-blue-700';
-      case 2:
-        return 'bg-slate-100 text-slate-700';
-      case 3:
-        return 'bg-amber-50 text-amber-700';
-      case 4:
-        return 'bg-green-50 text-green-700';
-      case 5:
-        return 'bg-red-50 text-red-700';
-      case 6:
-        return 'bg-yellow-50 text-yellow-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
+  openCopyModal(item: Category): void {
+    this.modalMode = 'copy';
+    this.selectedCategory = item;
+    this.isModalOpen = true;
+  }
+
+  parseNewData(item: Category): Category | null {
+    try {
+      return item.newData ? JSON.parse(item.newData) : null;
+    } catch {
+      return null;
     }
+  }
+
+  openSubmitDetail(item: Category): void {
+    this.detailMode = 'submit';
+    this.detailTarget = item;
+    this.detailOldData = null;
+    this.detailNewData = item;
+    this.detailModalOpen = true;
+  }
+
+  openApproveDetail(item: Category): void {
+    this.detailMode = 'approve';
+    this.detailTarget = item;
+    this.detailOldData = item;
+    this.detailNewData = this.parseNewData(item) ?? item;
+    this.detailModalOpen = true;
+  }
+
+  openCancelApproveDetail(item: Category): void {
+    this.detailMode = 'cancel-approve';
+    this.detailTarget = item;
+    this.detailOldData = null;
+    this.detailNewData = item;
+    this.detailModalOpen = true;
+  }
+
+  closeDetailModal(): void {
+    this.detailModalOpen = false;
+    this.detailTarget = null;
+    this.detailOldData = null;
+    this.detailNewData = null;
+  }
+
+  handleSaveAndSubmit(payload: Category): void {
+    if (this.modalMode === 'create' || this.modalMode === 'copy') {
+      this.categoryService.create(payload).subscribe({
+        next: (created) => {
+          const id = created?.id;
+          if (!id) {
+            this.toastr.success('Lưu thành công', 'Thành công');
+            this.closeModal();
+            this.loadCategories();
+            return;
+          }
+
+          this.categoryService.submit(id).subscribe({
+            next: () => {
+              this.toastr.success('Lưu và gửi duyệt thành công', 'Thành công');
+              this.closeModal();
+              this.loadCategories();
+            },
+            error: () => this.toastr.error('Gửi duyệt thất bại', 'Lỗi'),
+          });
+        },
+        error: () => this.toastr.error('Lưu thất bại', 'Lỗi'),
+      });
+      return;
+    }
+
+    if (this.selectedCategory?.id) {
+      this.categoryService.update(this.selectedCategory.id, payload).subscribe({
+        next: () => {
+          this.toastr.success('Cập nhật thành công', 'Thành công');
+          this.closeModal();
+          this.loadCategories();
+        },
+        error: () => this.toastr.error('Cập nhật thất bại', 'Lỗi'),
+      });
+    }
+  }
+
+  confirmSubmit(): void {
+    if (!this.detailTarget?.id) return;
+    this.categoryService.submit(this.detailTarget.id).subscribe({
+      next: () => {
+        this.toastr.success('Gửi duyệt thành công', 'Thành công');
+        this.closeDetailModal();
+        this.loadCategories();
+      },
+      error: () => this.toastr.error('Gửi duyệt thất bại', 'Lỗi'),
+    });
+  }
+
+  confirmApprove(): void {
+    if (!this.detailTarget?.id) return;
+    this.categoryService.approve(this.detailTarget.id).subscribe({
+      next: () => {
+        this.toastr.success('Phê duyệt thành công', 'Thành công');
+        this.closeDetailModal();
+        this.loadCategories();
+      },
+      error: () => this.toastr.error('Phê duyệt thất bại', 'Lỗi'),
+    });
+  }
+
+  confirmReject(): void {
+    if (!this.detailTarget?.id) return;
+    this.categoryService
+      .reject(this.detailTarget.id, { reason: 'Từ chối từ giao diện' })
+      .subscribe({
+        next: () => {
+          this.toastr.success('Từ chối thành công', 'Thành công');
+          this.closeDetailModal();
+          this.loadCategories();
+        },
+        error: () => this.toastr.error('Từ chối thất bại', 'Lỗi'),
+      });
+  }
+
+  confirmCancelApprove(): void {
+    if (!this.detailTarget?.id) return;
+    this.categoryService.cancelApprove(this.detailTarget.id).subscribe({
+      next: () => {
+        this.toastr.success('Hủy duyệt thành công', 'Thành công');
+        this.closeDetailModal();
+        this.loadCategories();
+      },
+      error: () => this.toastr.error('Hủy duyệt thất bại', 'Lỗi'),
+    });
   }
 }

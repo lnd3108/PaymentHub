@@ -1,0 +1,8 @@
+:host {
+  display: block;
+}
+
+input[readonly] {
+  background: #e5e7eb;
+  color: #4b5563;
+}

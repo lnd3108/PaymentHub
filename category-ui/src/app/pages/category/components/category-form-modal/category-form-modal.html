@@ -1,0 +1,143 @@
+@if (isOpen) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+    <div class="w-full max-w-5xl rounded-2xl bg-[#f8f9fa] shadow-2xl">
+      <div class="flex items-center justify-between border-b border-gray-200 px-8 py-5">
+        <div>
+          <p class="text-sm text-gray-500">Trang chủ  >  Tham số danh mục theo nhóm  >  {{ mode === 'update' ? 'Sửa' : 'Thêm mới' }}</p>
+          <h2 class="mt-1 text-[32px] font-semibold text-[#2f3437]">
+            {{ title }}
+          </h2>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            (click)="onClose()"
+            class="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+          >
+            ✕
+          </button>
+
+          <button
+            type="button"
+            (click)="onSave()"
+            class="rounded-xl border border-[#17a2a0] bg-white px-6 py-3 text-sm font-semibold text-[#0d8b89] hover:bg-[#eefafa]"
+          >
+            💾 Lưu
+          </button>
+
+          <button
+            type="button"
+            (click)="onSaveAndSubmit()"
+            class="rounded-xl bg-[#007c7a] px-6 py-3 text-sm font-semibold text-white hover:bg-[#006766]"
+          >
+            ⮞ Lưu và gửi duyệt
+          </button>
+        </div>
+      </div>
+
+      <div class="p-8">
+        <form [formGroup]="categoryForm" class="rounded-2xl bg-white p-6 shadow-sm">
+          <div class="grid grid-cols-1 gap-5 xl:grid-cols-4">
+            <div>
+              <label class="mb-2 block text-sm font-semibold text-[#40464b]">
+                Danh mục theo nhóm <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                formControlName="paramName"
+                [readonly]="mode === 'update'"
+                class="h-12 w-full rounded-xl border border-gray-300 px-4 text-sm outline-none focus:border-[#10a5a2]"
+              />
+            </div>
+
+            <div>
+              <label class="mb-2 block text-sm font-semibold text-[#40464b]">
+                Giá trị thành phần <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                formControlName="paramValue"
+                class="h-12 w-full rounded-xl border border-gray-300 px-4 text-sm outline-none focus:border-[#10a5a2]"
+              />
+            </div>
+
+            <div>
+              <label class="mb-2 block text-sm font-semibold text-[#40464b]">
+                Tên thành phần <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                formControlName="paramType"
+                class="h-12 w-full rounded-xl border border-gray-300 px-4 text-sm outline-none focus:border-[#10a5a2]"
+              />
+            </div>
+
+            <div>
+              <label class="mb-2 block text-sm font-semibold text-[#40464b]">
+                Cấu phần xử lý <span class="text-red-500">*</span>
+              </label>
+              <select
+                formControlName="componentCode"
+                class="h-12 w-full rounded-xl border border-gray-300 px-4 text-sm outline-none focus:border-[#10a5a2]"
+              >
+                <option value="">Chọn giá trị</option>
+                <option value="TRA">TRA</option>
+                <option value="RLT">RLT</option>
+                <option value="IBFT">IBFT</option>
+                <option value="IBANK">IBANK</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-5 grid grid-cols-1 gap-5 xl:grid-cols-2">
+            <div>
+              <label class="mb-2 block text-sm font-semibold text-[#40464b]">
+                Ngày hiệu lực <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                formControlName="effectiveDate"
+                class="h-12 w-full rounded-xl border border-gray-300 px-4 text-sm outline-none focus:border-[#10a5a2]"
+              />
+            </div>
+
+            <div>
+              <label class="mb-2 block text-sm font-semibold text-[#40464b]">
+                Ngày hết hiệu lực
+              </label>
+              <input
+                type="date"
+                formControlName="endEffectiveDate"
+                class="h-12 w-full rounded-xl border border-gray-300 px-4 text-sm outline-none focus:border-[#10a5a2]"
+              />
+            </div>
+          </div>
+
+          <div class="mt-5">
+            <label class="mb-2 block text-sm font-semibold text-[#40464b]">
+              Mô tả
+            </label>
+            <textarea
+              rows="3"
+              formControlName="description"
+              class="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-[#10a5a2]"
+            ></textarea>
+          </div>
+        </form>
+
+        @if (mode === 'update') {
+          <div class="mt-6 rounded-2xl border border-[#d9e7f4] bg-[#eef6fd] px-5 py-4 text-[15px] text-[#344054]">
+            <div class="flex items-start gap-3">
+              <span class="mt-0.5 text-lg text-[#2f80ed]">ℹ️</span>
+              <div>
+                Dữ liệu các trường thông tin trong cột dữ liệu mới lấy tại trường <b>NEW_DATA</b>.<br />
+                Hệ thống bôi đỏ các trường thông tin có sự thay đổi.
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}
