@@ -1,94 +1,208 @@
-﻿<div class="min-h-screen bg-[#f5f7f9]">
-  <div class="flex min-h-screen">
-    <aside class="hidden w-[280px] border-r border-gray-200 bg-white xl:block">
-      <div class="flex h-full flex-col">
-        <div class="border-b border-gray-200 px-6 py-5">
-          <div class="text-xl font-bold text-[#006c67]">PAYMENT HUB</div>
-        </div>
-
-        <div class="px-4 py-5 text-[15px]">
-          <a class="block rounded-xl bg-[#d8f0ec] px-4 py-3 font-medium text-[#006c67]">
-            Tham số danh mục theo nhóm
-          </a>
-
-          <a class="block rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50">Kênh thanh toán</a>
-          <a class="block rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50">Mã loại điện tra soát</a>
-          <a class="block rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50">Tiêu chí dừng phân kênh</a>
-          <a class="block rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50">Tạm dừng phân kênh</a>
-          <a class="block rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50">Cấu hình định tuyến kênh</a>
-          <a class="block rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50">Kênh phân phối/ứng dụng</a>
-          <a class="block rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50">Tiêu chí chấm điểm cho kênh</a>
-        </div>
-      </div>
-    </aside>
-
-    <div class="flex min-w-0 flex-1 flex-col">
-      <header class="flex h-[76px] items-center justify-end border-b border-gray-200 bg-white px-6">
-        <div class="flex items-center gap-4">
-          <button class="relative flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100">
-            <span class="text-lg">🔔</span>
-            <span class="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
-              9+
-            </span>
-          </button>
-
-          <select class="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none">
-            <option>VIE</option>
-            <option>ENG</option>
-          </select>
-
-          <div class="flex items-center gap-3">
-            <div class="h-10 w-10 rounded-full bg-gray-300"></div>
-            <div>
-              <p class="text-sm font-semibold text-gray-800">==============</p>
-              <p class="text-xs text-teal-600">Chuyên viên</p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main class="flex-1 p-6">
-        <div class="mx-auto max-w-7xl space-y-6">
-          <div class="flex items-center justify-between">
-            <div>
-              <p class="text-sm text-gray-500">Trang chủ > Tham số danh mục theo nhóm</p>
-              <h1 class="mt-1 text-3xl font-bold text-gray-800">Tham số danh mục theo nhóm</h1>
-            </div>
-
-            <button
-              type="button"
-              (click)="openCreateModal()"
-              class="rounded-xl bg-teal-700 px-5 py-3 font-medium text-white shadow-sm hover:bg-teal-800"
-            >
-              + Thêm mới
-            </button>
-          </div>
-
-          <app-category-filters
-            [statusOptions]="statusOptions"
-            [activeOptions]="activeOptions"
-            (search)="handleSearch($event)"
-            (reset)="handleReset()"
-          />
-
-          <app-category-table
-            [categories]="categories"
-            [loading]="loading"
-            [error]="error"
-            (edit)="openUpdateModal($event)"
-            (delete)="deleteCategory($event)"
-          />
-        </div>
-      </main>
+﻿<div class="space-y-6">
+  <div class="flex items-centers justify-between">
+    <div>
+      <p class="text-sm text-gray-500">Trang chủ > Tham số danh mục theo nhóm</p>
+      <h1 class="mt-1 tetx-3xl font-bold text-gray-800">
+        Tham số danh mục theo nhóm
+      </h1>
     </div>
-  </div>
-</div>
 
-<app-category-form-modal
-  [isOpen]="isModalOpen"
-  [mode]="modalMode"
-  [category]="selectedCategory"
-  (close)="closeModal()"
-  (save)="handleSave($event)"
-  (saveAndSubmit)="handleSaveAndSubmit($event)"
-/>
+    <button
+      type="button"
+      (click)="goCreate()"
+      class="rounded-xl bg-[#007c7a] px-6 py-3 font-semibold text-white hover:bg-[#006766]">
+      + Thêm mới
+    </button>
+  </div>
+
+  <section class="rounded-2xl bg-white p-5 shadow-sm">
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div>
+        <label class="mb-2 block text-sm font-medium text-gray-700">Tên thành phần</label>
+        <input
+          type="text"
+          [(ngModel)]="filters.paramName"
+          class="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-teal-600"
+          placeholder="Nhập nội dung"
+        />
+      </div>
+      <div>
+        <label class="mb-2 block text-sm font-medium text-gray-700">Giá trị thành phần</label>
+        <input
+          type="text"
+          [(ngModel)]="filters.paramValue"
+          class="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-teal-600"
+          placeholder="Nhập nội dung"
+        />
+      </div>
+      <div>
+        <label class="mb-2 block text-sm font-medium text-gray-700"> Danh mục theo nhóm</label>
+        <input
+          type="text"
+          [(ngModel)]="filters.paramType"
+          class="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-teal-600"
+          placeholder="Nhập nội dung"
+        />
+      </div>
+      <div>
+        <label class="mb-2 block text-sm font-medium text-gray-700">Trạng thái tham số</label>
+        <select
+          type="text"
+          [(ngModel)]="filters.status"
+          class="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-teal-600"
+        >
+          @for (option of statusOptions; track option.value){
+            <option [value]="option.value">{{option.label}}</option>
+          }
+        </select>
+      </div>
+      <div>
+        <label class="mb-2 block text-sm font-medium text-gray-700">Trạng thái hoạt động</label>
+        <select
+          type="text"
+          [(ngModel)]="filters.isActive"
+          class="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-teal-600"
+        >
+          @for (option of statusOptions; track option.value){
+            <option [value]="option.value">{{option.label}}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="mt-5 flex flex-wrap items-center justify-end gap-3">
+      <button
+        type="button"
+        (click)="resetFilters()"
+        class="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-gray-700 hover:bg-gray-50"
+      >Xóa bộ lọc</button>
+      <button
+        type="button"
+        (click)="search()"
+        class="rounded-lg border border-gray-300 bg-white px-5 py-2.5 text-gray-700 hover:bg-gray-50"
+      >Tìm kiếm</button>
+    </div>
+  </section>
+
+  <section class="rounded-2xl bg-white shadow-sm">
+    <div class="flex items-center justify-between border-b border-gray-200 px-6 py-5">
+      <div class="flex items-center gap-2">
+        <h2 class="text-[20px] font-semibold text-[#2f3437]">Danh sách bản ghi</h2>
+        <span class="rounded-lg border border-gray-100 px-2 py-1 text-xs text-gray-500">{{categories.length}}</span>
+      </div>
+
+      <button
+        type="button"
+        (click)="exportExcel()"
+        class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-200">
+        ⭳ Xuất Excel
+      </button>
+    </div>
+
+    @if(loading){
+      <div class="p-8 text-center text-gray-500">Đang tải dữ liệu....</div>
+    } @else if (error) {
+      <div class="p-8 text-center text-red-600"></div>
+    } @else if (categories.length === 0){
+      <div class="p-8 text center text-gray-500">Chưa có dữ liệu</div>
+    }@else{
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-gray-50 text-left text-gray-600">
+          <tr>
+            <th class="px-4 py-3"></th>
+            <th class="px-4 py-3">STT</th>
+            <th class="px-4 py-3">Tên Thành phần</th>
+            <th class="px-4 py-3">Giá tri thành phần</th>
+            <th class="px-4 py-3">Danh mục theo nhóm</th>
+            <th class="px-4 py-3">Mô tả</th>
+            <th class="px-4 py-3">Cấu phần xử lý</th>
+            <th class="px-4 py-3">Ngày hiệu lực</th>
+            <th class="px-4 py-3">Ngày hết hiệu lực</th>
+            <th class="px-4 py-3">Trạng thái</th>
+            <th class="px-4 py-3">Hoạt động</th>
+            <th class="px-4 py-3">Quản lý</th>
+          </tr>
+          </thead>
+
+          <tbody>
+            @for (item of categories; track item.id; let i = $index){
+              <tr class="border-t border-gray-100 hover:bg-gray-50/50">
+                <td class="px-4 py-3"><input type="checkbox"/></td>
+                <td class="px-4 py-3 ">{{i + 1}}</td>
+                <td class="px-4 py-3 ">{{item.paramName || '---'}}</td>
+                <td class="px-4 py-3 ">{{item.paramValue || '---'}}</td>
+                <td class="px-4 py-3 ">{{item.paramType || '---'}}</td>
+                <td class="px-4 py-3 ">{{item.description || '---'}}</td>
+                <td class="px-4 py-3 ">{{item.componentCode || '---'}}</td>
+                <td class="px-4 py-3 ">{{item.effectiveDate || '---'}}</td>
+                <td class="px-4 py-3 ">{{item.endEffectiveDate || '---'}}</td>
+                <td class="px-4 py-3">
+                  <span
+                    class="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
+                    [ngClass]="getStatusClass(item.status ?? 0)"
+                  >
+                    {{getStatusLabel(item.status ?? 0)}}
+                  </span>
+                </td >
+                <td class="px-4 py-3">
+                  <span
+                    class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                    [ngClass]="item.isActive === 1 ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'"
+                  >
+                  {{ item.isActive === 1 ? 'Hoạt động' : 'Không hoạt động' }}
+                </span>
+                </td >
+                <td class="px-4 py-3">
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      (click)="goEdit(item)"
+                      class="rounded-lg border border-gray-200 px-3 py-1 text-xs"
+                    >
+                      Sửa
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="goCopy(item)"
+                      class="rounded-lg border border-gray-200 px-3 py-1 text-xs"
+                    >
+                      Sao chép
+                    </button>
+
+                    @if (canApprove(item)) {
+                      <button
+                        type="button"
+                        (click)="goApprove(item)"
+                        class="rounded-lg bg-[#d8a126] px-3 py-1 text-xs text-white"
+                      >
+                        Phê duyệt
+                      </button>
+                    }
+
+                    @if (canCancelApprove(item)) {
+                      <button
+                        type="button"
+                        (click)="goCancelApprove(item)"
+                        class="rounded-lg bg-[#1f9d55] px-3 py-1 text-xs text-white"
+                      >
+                        Hủy duyệt
+                      </button>
+                    }
+
+                    <button
+                      type="button"
+                      (click)="deleteCategory(item)"
+                      class="rounded-lg bg-red-600 px-3 py-1 text-xs text-white"
+                    >Xóa</button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>

@@ -1,29 +1,24 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, EventEmitter,Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { CategoryService } from '../../../services/category.service';
 import { Category } from '../../../models/category.models';
 import { ToastrService } from 'ngx-toastr';
 import Swal from 'sweetalert2';
-import { CategoryFiltersComponent } from '../components/category-filters/category-filters';
-import { CategoryTableComponent } from '../components/category-table/category-table';
-import { CategoryFormModalComponent } from '../components/category-form-modal/category-form-modal';
-import {CategoryDetailActionModalComponent } from '../components/category-detail-action-modal/category-detail-action-modal';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { CategorySearch } from '../../../models/category-search.models';
 
 @Component({
   selector: 'app-category-list',
   standalone: true,
-  imports: [
-    CommonModule,
-    CategoryFiltersComponent,
-    CategoryTableComponent,
-    CategoryFormModalComponent,
-  ],
+  imports: [CommonModule, FormsModule],
   templateUrl: './category-list.html',
   styleUrl: './category-list.css',
 })
 export class CategoryList implements OnInit {
   private categoryService = inject(CategoryService);
   private toastr = inject(ToastrService);
+  private router = inject(Router);
 
   categories: Category[] = [];
   allCategories: Category[] = [];
@@ -31,23 +26,20 @@ export class CategoryList implements OnInit {
   loading = false;
   error = '';
 
-  isModalOpen = false;
-  modalMode: 'create' | 'update' | 'copy' = 'create';
-  selectedCategory: Category | null = null;
-
   statusOptions: { value: string; label: string }[] = [];
   activeOptions: { value: string; label: string }[] = [];
 
-  detailModalOpen = false;
-  detailMode: 'submit' | 'approve' | 'cancel-approve' = 'submit';
-  detailOldData: Category | null = null;
-  detailNewData: Category | null = null;
-  detailTarget: Category | null = null;
+  filters = {
+    paramName: '',
+    paramValue: '',
+    paramType: '',
+    status: '',
+    isActive: '',
+  };
 
   ngOnInit(): void {
     this.loadCategories();
   }
-
   loadCategories(): void {
     this.loading = true;
     this.error = '';
@@ -56,7 +48,6 @@ export class CategoryList implements OnInit {
       next: (data) => {
         this.allCategories = data ?? [];
         this.categories = [...this.allCategories];
-        this.buildFilterOptions(this.allCategories);
         this.loading = false;
       },
       error: (err) => {
@@ -69,16 +60,17 @@ export class CategoryList implements OnInit {
   }
 
   buildFilterOptions(data: Category[]): void {
-    const statuses = data
-      .map((item) => item.status)
-      .filter((v): v is number => v !== null && v !== undefined);
+    const uniqueStatuses = [
+      ...new Set(
+        data.map((item) => item.status).filter((v): v is number => v !== null && v !== undefined),
+      ),
+    ].sort((a, b) => a - b);
 
-    const actives = data
-      .map((item) => item.isActive)
-      .filter((v): v is number => v !== null && v !== undefined);
-
-    const uniqueStatuses = [...new Set(statuses)].sort((a, b) => a - b);
-    const uniqueActives = [...new Set(actives)].sort((a, b) => a - b);
+    const uniqueActives = [
+      ...new Set(
+        data.map((item) => item.isActive).filter((v): v is number => v !== null && v !== undefined),
+      ),
+    ].sort((a, b) => a - b);
 
     this.statusOptions = [
       { value: '', label: 'Tất cả' },
@@ -97,101 +89,82 @@ export class CategoryList implements OnInit {
     ];
   }
 
-  handleSearch(filters: {
-    paramName: string;
-    paramValue: string;
-    paramType: string;
-    status: string;
-    isActive: string;
-  }): void {
-    const paramName = filters.paramName.trim().toLowerCase();
-    const paramValue = filters.paramValue.trim().toLowerCase();
-    const paramType = filters.paramType.trim().toLowerCase();
+  search(): void {
+    this.loading = true;
+    this.error = '';
 
-    const selectedStatus = filters.status === '' ? null : Number(filters.status);
-    const selectedIsActive = filters.isActive === '' ? null : Number(filters.isActive);
+    const request: CategorySearch = {
+      paramName: this.filters.paramName.trim() || null,
+      paramValue: this.filters.paramValue.trim() || null,
+      paramType: this.filters.paramType.trim() || null,
+      status: this.filters.status === '' ? null : Number(this.filters.status),
+      isActive: this.filters.isActive === '' ? null : Number(this.filters.isActive),
+    };
 
-    this.categories = this.allCategories.filter((item) => {
-      const matchParamName = !paramName || item.paramName?.toLowerCase().includes(paramName);
-      const matchParamValue = !paramValue || item.paramValue?.toLowerCase().includes(paramValue);
-      const matchParamType = !paramType || item.paramType?.toLowerCase().includes(paramType);
-      const matchStatus = selectedStatus === null || item.status === selectedStatus;
-      const matchIsActive = selectedIsActive === null || item.isActive === selectedIsActive;
-
-      return matchParamName && matchParamValue && matchParamType && matchStatus && matchIsActive;
+    this.categoryService.search(request).subscribe({
+      next: (res) => {
+        this.categories = res ?? [];
+        this.loading = false;
+      },
+      error: (err) => {
+        console.error('Lỗi khi tìm kiếm category:', err);
+        this.error = 'Không tìm kiếm được dữ liệu';
+        this.loading = false;
+        this.toastr.error('Tìm kiếm thất bại', 'Lỗi');
+      },
     });
   }
 
-  handleReset(): void {
+  resetFilters(): void {
+    this.filters = {
+      paramName: '',
+      paramValue: '',
+      paramType: '',
+      status: '',
+      isActive: '',
+    };
     this.categories = [...this.allCategories];
   }
 
-  openCreateModal(): void {
-    this.modalMode = 'create';
-    this.selectedCategory = null;
-    this.isModalOpen = true;
+  goCreate(): void {
+    this.router.navigate(['/categories/create']);
   }
 
-  openUpdateModal(item: Category): void {
-    this.modalMode = 'update';
-    this.selectedCategory = item;
-    this.isModalOpen = true;
+  goEdit(item: Category): void {
+    if (!item.id) return;
+    this.router.navigate(['/categories', item.id, 'edit']);
   }
 
-  closeModal(): void {
-    this.isModalOpen = false;
-    this.selectedCategory = null;
+  goCopy(item: Category): void {
+    if (!item.id) return;
+    this.router.navigate(['/categories', item.id, 'copy']);
   }
 
-  handleSave(payload: Category): void {
-    if (this.modalMode === 'create') {
-      this.createCategory(payload);
-      return;
-    }
-
-    if (this.selectedCategory?.id) {
-      this.updateCategory(this.selectedCategory.id, payload);
-    }
+  goSubmit(item: Category): void {
+    if (!item.id) return;
+    this.router.navigate(['/categories', item.id, 'submit']);
   }
 
-  createCategory(payload: Category): void {
-    this.categoryService.create(payload).subscribe({
-      next: () => {
-        this.toastr.success('Thêm mới thành công', 'Thành công');
-        this.closeModal();
-        this.loadCategories();
-      },
-      error: (err) => {
-        console.error('Lỗi khi thêm mới category:', err);
-        this.toastr.error('Thêm mới thất bại', 'Lỗi');
-      },
-    });
+  goApprove(item: Category): void {
+    if (!item.id) return;
+    this.router.navigate(['/categories', item.id, 'approve']);
   }
 
-  updateCategory(id: number, payload: Category): void {
-    this.categoryService.update(id, payload).subscribe({
-      next: () => {
-        this.toastr.success('Cập nhật thành công', 'Thành công');
-        this.closeModal();
-        this.loadCategories();
-      },
-      error: (err) => {
-        console.error('Lỗi khi cập nhật category:', err);
-        this.toastr.error('Cập nhật thất bại', 'Lỗi');
-      },
-    });
+  goCancelApprove(item: Category): void {
+    if (!item.id) return;
+    this.router.navigate(['/categories', item.id, 'cancel-approve']);
   }
 
   deleteCategory(item: Category): void {
     if (!item.id) return;
 
     Swal.fire({
-      title: 'Xác nhận xóa?',
+      title: 'Xác nhận xóa',
       text: 'Bản ghi này sẽ bị xóa khỏi hệ thống.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonText: 'Xóa',
       cancelButtonText: 'Hủy',
+      confirmButtonText: 'Xóa',
       reverseButtons: true,
       confirmButtonColor: '#dc2626',
       cancelButtonColor: '#6b7280',
@@ -203,8 +176,9 @@ export class CategoryList implements OnInit {
           this.toastr.success('Xóa thành công', 'Thành công');
           this.loadCategories();
         },
+
         error: (err) => {
-          console.error('Lỗi khi xóa category:', err);
+          console.error(err);
           this.toastr.error('Xóa thất bại', 'Lỗi');
         },
       });
@@ -215,151 +189,101 @@ export class CategoryList implements OnInit {
     switch (status) {
       case 1:
         return '1 - Tạo mới';
-      case 2:
-        return '2 - Khởi tạo';
       case 3:
         return '3 - Chờ phê duyệt';
       case 4:
         return '4 - Đã phê duyệt';
       case 5:
         return '5 - Từ chối';
-      case 6:
-        return '6 - Hủy duyệt';
+      case 7:
+        return '7 - Hủy duyệt';
       default:
         return `${status} - Khác`;
     }
   }
 
-  openCopyModal(item: Category): void {
-    this.modalMode = 'copy';
-    this.selectedCategory = item;
-    this.isModalOpen = true;
-  }
-
-  parseNewData(item: Category): Category | null {
-    try {
-      return item.newData ? JSON.parse(item.newData) : null;
-    } catch {
-      return null;
+  getStatusClass(status: number): string {
+    switch (status) {
+      case 1:
+        return 'bg-cyan-50 text-cyan-700';
+      case 3:
+        return 'bg-amber-50 text-amber-700';
+      case 4:
+        return 'bg-green-50 text-green-700';
+      case 5:
+        return 'bg-red-50 text-red-700';
+      case 7:
+        return 'bg-gray-100 text-gray-700';
+      default:
+        return 'bg-slate-100 text-slate-700';
     }
   }
 
-  openSubmitDetail(item: Category): void {
-    this.detailMode = 'submit';
-    this.detailTarget = item;
-    this.detailOldData = null;
-    this.detailNewData = item;
-    this.detailModalOpen = true;
+  canSubmit(item: Category): boolean {
+    return item.status === 1 || item.status === 5 || item.status === 6 || item.status === 7;
   }
 
-  openApproveDetail(item: Category): void {
-    this.detailMode = 'approve';
-    this.detailTarget = item;
-    this.detailOldData = item;
-    this.detailNewData = this.parseNewData(item) ?? item;
-    this.detailModalOpen = true;
+  canApprove(item: Category): boolean {
+    return item.status === 3;
   }
 
-  openCancelApproveDetail(item: Category): void {
-    this.detailMode = 'cancel-approve';
-    this.detailTarget = item;
-    this.detailOldData = null;
-    this.detailNewData = item;
-    this.detailModalOpen = true;
+  canCancelApprove(item: Category): boolean {
+    return item.status === 4;
   }
 
-  closeDetailModal(): void {
-    this.detailModalOpen = false;
-    this.detailTarget = null;
-    this.detailOldData = null;
-    this.detailNewData = null;
-  }
-
-  handleSaveAndSubmit(payload: Category): void {
-    if (this.modalMode === 'create' || this.modalMode === 'copy') {
-      this.categoryService.create(payload).subscribe({
-        next: (created) => {
-          const id = created?.id;
-          if (!id) {
-            this.toastr.success('Lưu thành công', 'Thành công');
-            this.closeModal();
-            this.loadCategories();
-            return;
-          }
-
-          this.categoryService.submit(id).subscribe({
-            next: () => {
-              this.toastr.success('Lưu và gửi duyệt thành công', 'Thành công');
-              this.closeModal();
-              this.loadCategories();
-            },
-            error: () => this.toastr.error('Gửi duyệt thất bại', 'Lỗi'),
-          });
-        },
-        error: () => this.toastr.error('Lưu thất bại', 'Lỗi'),
-      });
+  exportExcel(): void {
+    if (!this.categories || this.categories.length === 0) {
+      this.toastr.warning('Không có dữ liệu để xuất', 'Cảnh báo');
       return;
     }
 
-    if (this.selectedCategory?.id) {
-      this.categoryService.update(this.selectedCategory.id, payload).subscribe({
-        next: () => {
-          this.toastr.success('Cập nhật thành công', 'Thành công');
-          this.closeModal();
-          this.loadCategories();
-        },
-        error: () => this.toastr.error('Cập nhật thất bại', 'Lỗi'),
-      });
-    }
-  }
+    const headers = [
+      'STT',
+      'Danh mục theo nhóm',
+      'Giá trị thành phần',
+      'Tên thành phần',
+      'Mô tả',
+      'Cấu phần xử lý',
+      'Ngày hiệu lực',
+      'Ngày hết hiệu lực',
+      'Trạng thái',
+      'Trạng thái hoạt động',
+    ];
 
-  confirmSubmit(): void {
-    if (!this.detailTarget?.id) return;
-    this.categoryService.submit(this.detailTarget.id).subscribe({
-      next: () => {
-        this.toastr.success('Gửi duyệt thành công', 'Thành công');
-        this.closeDetailModal();
-        this.loadCategories();
-      },
-      error: () => this.toastr.error('Gửi duyệt thất bại', 'Lỗi'),
+    const rows = this.categories.map((item, index) => [
+      index + 1,
+      item.paramName ?? '',
+      item.paramValue ?? '',
+      item.paramType ?? '',
+      item.description ?? '',
+      item.componentCode ?? '',
+      item.effectiveDate ?? '',
+      item.endEffectiveDate ?? '',
+      this.getStatusLabel(item.status ?? 0),
+      item.isActive === 1 ? 'Hoạt động' : 'Không hoạt động',
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], {
+      type: 'text/csv;charset=utf-8;',
     });
-  }
 
-  confirmApprove(): void {
-    if (!this.detailTarget?.id) return;
-    this.categoryService.approve(this.detailTarget.id).subscribe({
-      next: () => {
-        this.toastr.success('Phê duyệt thành công', 'Thành công');
-        this.closeDetailModal();
-        this.loadCategories();
-      },
-      error: () => this.toastr.error('Phê duyệt thất bại', 'Lỗi'),
-    });
-  }
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
 
-  confirmReject(): void {
-    if (!this.detailTarget?.id) return;
-    this.categoryService
-      .reject(this.detailTarget.id, { reason: 'Từ chối từ giao diện' })
-      .subscribe({
-        next: () => {
-          this.toastr.success('Từ chối thành công', 'Thành công');
-          this.closeDetailModal();
-          this.loadCategories();
-        },
-        error: () => this.toastr.error('Từ chối thất bại', 'Lỗi'),
-      });
-  }
+    const today = new Date();
+    const fileName = `category_export_${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}.csv`;
 
-  confirmCancelApprove(): void {
-    if (!this.detailTarget?.id) return;
-    this.categoryService.cancelApprove(this.detailTarget.id).subscribe({
-      next: () => {
-        this.toastr.success('Hủy duyệt thành công', 'Thành công');
-        this.closeDetailModal();
-        this.loadCategories();
-      },
-      error: () => this.toastr.error('Hủy duyệt thất bại', 'Lỗi'),
-    });
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    window.URL.revokeObjectURL(url);
+    this.toastr.success('Xuất file thành công', 'Thành công');
   }
 }

@@ -1,0 +1,109 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <h1 class="text-[32px] font-semibold text-[#2f3437]">Xem chi tiết</h1>
+      <span class="rounded-full px-3 py-1 text-xs font-semibold" [ngClass]="badgeClass">
+        {{ statusLabel }}
+      </span>
+    </div>
+
+    <button
+      type="button"
+      (click)="goBack()"
+      class="text-2xl text-gray-500 hover:text-gray-700"
+    >
+      ×
+    </button>
+  </div>
+
+  @if (loading) {
+    <div class="rounded-2xl bg-white p-8 text-center text-gray-500">Đang tải dữ liệu...</div>
+  } @else {
+    <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
+      <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        <div class="flex items-center gap-2 bg-[#f4f5f6] px-5 py-4 font-semibold text-[#4b4f56]">
+          <span class="rounded bg-[#ffc93c] px-2 py-0.5 text-xs text-white">i</span>
+          Dữ liệu cũ
+        </div>
+
+        <div class="space-y-4 px-5 py-5 text-sm">
+          @for (item of oldDataEntries; track item[0]) {
+            <div>
+              <div class="text-[#8a8f98]">{{ item[0] }}</div>
+              <div class="mt-1 text-[#343a40]">{{ item[1] }}</div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+        <div class="flex items-center gap-2 bg-[#f4f5f6] px-5 py-4 font-semibold text-[#4b4f56]">
+          <span class="rounded bg-[#58c7c2] px-2 py-0.5 text-xs text-white">i</span>
+          Dữ liệu mới
+        </div>
+
+        <div class="space-y-4 px-5 py-5 text-sm">
+          @for (item of newDataEntries; track item[0]; let i = $index) {
+            <div>
+              <div class="text-[#8a8f98]">{{ item[0] }}</div>
+              <div
+                class="mt-1"
+                [ngClass]="isChanged(i, item[1]) ? 'font-semibold text-red-500' : 'text-[#343a40]'"
+              >
+                {{ item[1] }}
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="flex justify-end gap-3">
+      @if (mode === 'submit') {
+        <button
+          type="button"
+          (click)="goBack()"
+          class="rounded-xl border border-[#17a2a0] bg-white px-6 py-3 text-sm font-semibold text-[#0d8b89]"
+        >
+          Xóa
+        </button>
+
+        <button
+          type="button"
+          (click)="confirmSubmit()"
+          class="rounded-xl bg-[#007c7a] px-6 py-3 text-sm font-semibold text-white"
+        >
+          Gửi duyệt
+        </button>
+      }
+
+      @if (mode === 'approve') {
+        <button
+          type="button"
+          (click)="confirmReject()"
+          class="rounded-xl border border-[#17a2a0] bg-white px-6 py-3 text-sm font-semibold text-[#0d8b89]"
+        >
+          Từ chối
+        </button>
+
+        <button
+          type="button"
+          (click)="confirmApprove()"
+          class="rounded-xl bg-[#007c7a] px-6 py-3 text-sm font-semibold text-white"
+        >
+          Phê duyệt
+        </button>
+      }
+
+      @if (mode === 'cancel-approve') {
+        <button
+          type="button"
+          (click)="confirmCancelApprove()"
+          class="rounded-xl bg-[#007c7a] px-6 py-3 text-sm font-semibold text-white"
+        >
+          Hủy phê duyệt
+        </button>
+      }
+    </div>
+  }
+</div>

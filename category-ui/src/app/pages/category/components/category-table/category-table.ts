@@ -2,7 +2,6 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Category } from '../../../../models/category.models';
 
-
 @Component({
   selector: 'app-category-table',
   standalone: true,
@@ -27,16 +26,14 @@ export class CategoryTableComponent {
     switch (status) {
       case 1:
         return '1 - Tạo mới';
-      case 2:
-        return '2 - Khởi tạo';
       case 3:
         return '3 - Chờ phê duyệt';
       case 4:
         return '4 - Đã phê duyệt';
       case 5:
         return '5 - Từ chối';
-      case 6:
-        return '6 - Hủy duyệt';
+      case 7:
+        return '7 - Hủy duyệt';
       default:
         return `${status} - Khác`;
     }
@@ -45,19 +42,17 @@ export class CategoryTableComponent {
   getStatusClass(status: number): string {
     switch (status) {
       case 1:
-        return 'bg-blue-50 text-blue-700';
-      case 2:
-        return 'bg-slate-100 text-slate-700';
+        return 'bg-cyan-50 text-cyan-700';
       case 3:
         return 'bg-amber-50 text-amber-700';
       case 4:
         return 'bg-green-50 text-green-700';
       case 5:
         return 'bg-red-50 text-red-700';
-      case 6:
-        return 'bg-yellow-50 text-yellow-700';
-      default:
+      case 7:
         return 'bg-gray-100 text-gray-700';
+      default:
+        return 'bg-slate-100 text-slate-700';
     }
   }
 

@@ -1,0 +1,61 @@
+﻿<div class="min-h-screen bg-[#f5f7f9]">
+  <div class="flex min-h-screen">
+    <aside class="hidden w-[280px] border-r border-gray-200 bg-white xl:block">
+      <div class="flex h-full flex-col">
+        <div class="border-b border-b-gray-200 px-6 py-5">
+          <div class="text-xl font-bold text-[#006c67]">PAYMENTHUB</div>
+        </div>
+
+        <div class="px-4 py-5 text-[15px]">
+          <a
+            routerLink="/categories"
+            routerLinkActive="bg-[#d8f0ec] text-[#006c67] font-medium"
+            [routerLinkActiveOptions] = "{exact: false}"
+            class="block rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50"
+          >
+            Tham số danh mục theo nhóm
+          </a>
+          <a class="block rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50">Kênh thanh toán</a>
+          <a class="block rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50">Mã loại điện tra soát</a>
+          <a class="block rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50">Tiêu chí dừng phân kênh</a>
+          <a class="block rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50">Tạm dừng phân kênh</a>
+          <a class="block rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50">Cấu hình định tuyến kênh</a>
+          <a class="block rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50">Kênh phân phối/ứng dụng</a>
+          <a class="block rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50">Tiêu chí chấm điểm cho kênh</a>
+        </div>
+      </div>
+    </aside>
+
+    <div class="flex min-w-0 flex-1 flex-col">
+      <header class="flex h-[76px] items-center justify-end border-b border-gray-200 bg-white px-6">
+        <div class="flex items-center gap-4">
+          <button class="relative flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 ">
+            <span class="text-lg">🔔</span>
+            <span class="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
+              9+
+            </span>
+          </button>
+
+          <select class="rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 outline-none">
+            <option>VIE</option>
+            <option>ENG</option>
+          </select>
+
+          <div class="flex items-center gap-3">
+            <div class="h-10 w-10 rounded-full bg-gray-300"></div>
+            <div>
+              <p class="text-sm font-semibold text-gray-800">===========</p>
+              <p class="text-xs text-shadow-teal-600">Chuyên Viên</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="flex-1 p-6">
+        <div class="mx-auto max-w-7xl">
+          <router-outlet/>
+        </div>
+      </main>
+    </div>
+  </div>
+</div>

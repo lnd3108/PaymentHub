@@ -4,6 +4,13 @@ import { Observable } from 'rxjs';
 import { Category } from '../models/category.models';
 import { CategorySearch } from '../models/category-search.models';
 
+export interface PageResponse<T> {
+  content: T[];
+  totalElements?: number;
+  totalPages?: number;
+  number?: number;
+  size?: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -23,7 +30,7 @@ export class CategoryService{
   }
 
   create(data: Category): Observable<Category>{
-    return this.http.post<Category>(`${this.apiUrl}/created`, data);
+    return this.http.post<Category>(`${this.apiUrl}`, data);
   }
 
   update(id: number, data: Category) {
