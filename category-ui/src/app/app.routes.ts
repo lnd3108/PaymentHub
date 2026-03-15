@@ -42,7 +42,12 @@ export const routes: Routes = [
       {
         path: ':id/cancel-approve',
         component: CategoryDetailPage,
-        data: { mode: 'cancel-approve '},
+        data: { mode: 'cancel-approve ' },
+      },
+      {
+        path: ':id/detail',
+        component: CategoryDetailPage,
+        data: { mode: 'detail' },
       },
     ],
   },

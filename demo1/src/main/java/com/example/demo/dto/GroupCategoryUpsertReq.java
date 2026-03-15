@@ -10,6 +10,7 @@ public record GroupCategoryUpsertReq(
         String componentCode,
         Integer isActive,
         Integer isDisplay,
+        String newData,
         LocalDate effectiveDate,
         LocalDate endEffectiveDate
 ) {

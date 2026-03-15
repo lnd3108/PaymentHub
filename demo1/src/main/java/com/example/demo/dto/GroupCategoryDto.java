@@ -12,6 +12,7 @@ public record GroupCategoryDto(
         Integer status,
         Integer isActive,
         Integer isDisplay,
+        String newData,
         LocalDate effectiveDate,
         LocalDate endEffectiveDate
 ) {

@@ -4,7 +4,7 @@
       <p class="text-sm text-gray-500">
         Trang chủ > Tham số danh mục theo nhóm > {{mode === 'edit' ? 'Sửa' : 'Thêm mới'}}
       </p>
-      <h1 class="mt-1">
+      <h1 class="mt-2 text-4xl font-bold tracking-tight text-[#1f2937]">
         {{title}}
       </h1>
     </div>
@@ -46,7 +46,7 @@
           </label>
           <input
             type="text"
-            formControlName="paramName"
+            formControlName="paramType"
             [readOnly]="mode === 'edit'"
             class="h-12 w-full rounded-xl border border-gray-300 px-4 text-sm outline-none focus:border-[#10a5a2] read-only:bg-gray-200"
           />
@@ -69,7 +69,7 @@
           </label>
           <input
             type="text"
-            formControlName="paramType"
+            formControlName="paramName"
             class="h-12 w-full rounded-xl border border-gray-300 px-4 text-sm outline-none focus:border-[#10a5a2]"
           />
         </div>
@@ -87,6 +87,7 @@
             <option value="RLT">RLT</option>
             <option value="IBFT">IBFT</option>
             <option value="IBANK">IBANK</option>
+            <option value="IBANK">KIWI</option>
           </select>
         </div>
       </div>

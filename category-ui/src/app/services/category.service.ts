@@ -1,15 +1,16 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Category } from '../models/category.models';
 import { CategorySearch } from '../models/category-search.models';
 
-export interface PageResponse<T> {
-  content: T[];
-  totalElements?: number;
-  totalPages?: number;
-  number?: number;
-  size?: number;
+export interface CategoryPageResponse {
+  content: Category[];
+  totalElements: number;
+  totalPages: number;
+  number: number;
+  size: number;
+  empty: boolean;
 }
 
 @Injectable({
@@ -18,11 +19,14 @@ export interface PageResponse<T> {
 
 export class CategoryService{
   private http = inject(HttpClient);
-
   private apiUrl = 'http://localhost:8094/api/jpa/categories';
 
-  getAll(): Observable<Category[]>{
-    return this.http.get<Category[]>(this.apiUrl);
+  getAll(page = 0, size = 20): Observable<CategoryPageResponse>{
+    const params = new HttpParams()
+      .set('page', page)
+      .set('size', size)
+      .set('sort', 'id,desc')
+    return this.http.get<CategoryPageResponse>(this.apiUrl, {params});
   }
 
   getById(id: number): Observable<Category>{
@@ -41,8 +45,13 @@ export class CategoryService{
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
 
-  search(data: CategorySearch): Observable<Category[]>{
-    return this.http.post<Category[]>(`${this.apiUrl}/search`, data);
+  search(data: Partial<CategorySearch>, page = 0, size= 20): Observable<CategoryPageResponse> {
+    const params = new HttpParams()
+      .set('page', page)
+      .set('size', size)
+      .set('sort', 'id,desc')
+
+    return this.http.post<CategoryPageResponse>(`${this.apiUrl}/search`, data,{params});
   }
 
   submit(id: number) {

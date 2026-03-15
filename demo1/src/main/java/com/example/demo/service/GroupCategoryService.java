@@ -23,7 +23,7 @@ public class GroupCategoryService {
     private static final int STATUS_PENDING = 3;
     private static final int STATUS_APPROVED = 4;
     private static final int STATUS_REJECTED = 5;
-    private static final int STATUS_CANCEL_APPROVE = 6;
+    private static final int STATUS_CANCEL_APPROVE = 7;
 
     private final GroupCategoryRepository repository;
     private final ObjectMapper objectMapper;
@@ -50,8 +50,19 @@ public class GroupCategoryService {
     }
 
     public GroupCategory createAndSubmit(GroupCategoryUpsertReq req) {
-        GroupCategory entity = create(req);
+        validateRequired(req);
+        validateDuplicateForCreate(req);
+
+        GroupCategory entity = new GroupCategory();
+        applyNormalData(entity, req);
+
+        entity.setId(null);
         entity.setStatus(STATUS_PENDING);
+        entity.setIsActive(req.isActive() == null ? 1 : req.isActive());
+        entity.setIsDisplay(req.isDisplay() == null ? 1 : req.isDisplay());
+
+        entity.setNewData(toJson(entity));
+
         return repository.save(entity);
     }
 
@@ -82,6 +93,11 @@ public class GroupCategoryService {
         }
 
         cur.setStatus(STATUS_PENDING);
+
+        if (cur.getNewData() == null || cur.getNewData().isBlank()) {
+            cur.setNewData(toJson(cur));
+        }
+
         return repository.save(cur);
     }
 
@@ -125,6 +141,7 @@ public class GroupCategoryService {
         }
 
         cur.setStatus(STATUS_REJECTED);
+        cur.setIsDisplay(1);
 
         if (reason != null && !reason.isBlank()) {
             String oldDesc = cur.getDescription() == null ? "" : cur.getDescription();
@@ -138,11 +155,12 @@ public class GroupCategoryService {
     public GroupCategory cancelApprove(Long id) {
         GroupCategory cur = getRequired(id);
 
-        if (!Objects.equals(cur.getStatus(), STATUS_PENDING)) {
+        if (!Objects.equals(cur.getStatus(), STATUS_APPROVED)) {
             throw new RuntimeException("Chỉ bản ghi chờ phê duyệt mới được hủy duyệt");
         }
 
         cur.setStatus(STATUS_CANCEL_APPROVE);
+        cur.setIsDisplay(1);
         cur.setNewData(null);
         return repository.save(cur);
     }
@@ -161,8 +179,8 @@ public class GroupCategoryService {
         return repository.findAll(GroupCategorySpecs.search(req), pageable);
     }
 
-    public List<GroupCategory> getCategory() {
-        return repository.findAll();
+    public Page<GroupCategory> getCategory(Pageable pageable) {
+        return repository.findAll(pageable);
     }
 
     public GroupCategory getCategoryById(Long id) {

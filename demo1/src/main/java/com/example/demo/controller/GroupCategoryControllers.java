@@ -13,7 +13,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
@@ -39,8 +38,8 @@ public class GroupCategoryControllers {
     }
 
     @GetMapping
-    public List<GroupCategory> getAll() {
-        return service.getCategory();
+    public Page<GroupCategory> getAll(@PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC)Pageable pageable) {
+        return service.getCategory(pageable);
     }
 
     @GetMapping("/{id}")
@@ -82,7 +81,7 @@ public class GroupCategoryControllers {
     @PostMapping("/search")
     public Page<GroupCategory> search(
             @RequestBody GroupCategorySearchReq req,
-            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+            @PageableDefault(size = 2000, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return service.search(req, pageable);
     }
