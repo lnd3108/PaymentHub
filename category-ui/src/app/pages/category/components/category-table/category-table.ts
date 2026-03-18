@@ -29,7 +29,7 @@ export class CategoryTableComponent {
   @Output() pageChange = new EventEmitter<number>();
   @Output() sizeChange = new EventEmitter<number>();
 
-  readonly pageSizeOptions = [10, 20, 50, 100];
+  readonly pageSizeOptions = [20, 50, 100];
 
   get startItem(): number {
     if (this.totalElements === 0) return 0;

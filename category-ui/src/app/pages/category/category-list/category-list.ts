@@ -27,8 +27,23 @@ export class CategoryList implements OnInit {
   loading = false;
   error = '';
 
-  statusOptions: { value: string; label: string }[] = [];
-  activeOptions: { value: string; label: string }[] = [];
+  // statusOptions: { value: string; label: string }[] = [];
+  // activeOptions: { value: string; label: string }[] = [];
+
+  statusOptions: { value: string; label: string }[] = [
+    { value: '', label: 'Tất cả' },
+    { value: '1', label: 'Tạo mới' },
+    { value: '3', label: 'Chờ phê duyệt' },
+    { value: '4', label: 'Đã phê duyệt' },
+    { value: '5', label: 'Từ chối' },
+    { value: '7', label: 'Hủy duyệt' },
+  ];
+
+  activeOptions: { value: string; label: string }[] = [
+    { value: '', label: 'Tất cả' },
+    { value: '1', label: 'Hoạt động' },
+    { value: '0', label: 'Không hoạt động' },
+  ];
 
   currentFilters = {
     paramName: '',
@@ -60,9 +75,9 @@ export class CategoryList implements OnInit {
         this.page = res?.number ?? 0;
         this.size = res?.size ?? this.size;
 
-        if (this.page === 0) {
-          this.buildFilterOptions(this.categories);
-        }
+        // if (this.page === 0) {
+        //   this.buildFilterOptions(this.categories);
+        // }
 
         this.loading = false;
       },

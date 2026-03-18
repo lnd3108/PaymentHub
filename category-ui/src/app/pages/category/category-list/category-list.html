@@ -1,5 +1,4 @@
 ﻿<div class="space-y-8">
-  <!-- Header -->
   <section class="flex items-start justify-between gap-4">
     <div>
       <p class="text-sm text-gray-500">Trang chủ > Tham số danh mục theo nhóm</p>
@@ -28,6 +27,7 @@
     <app-category-filters
       [statusOptions]="statusOptions"
       [activeOptions]="activeOptions"
+      [currentFilters]="currentFilters"
       (search)="onSearch($event)"
       (reset)="onResetFilters()"
     />

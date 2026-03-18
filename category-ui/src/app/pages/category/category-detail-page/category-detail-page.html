@@ -16,7 +16,7 @@
     </button>
   </div>
 
-  @if (mode === 'approve' && !newData) {
+  @if (mode === 'submit' && !newData) {
     <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
       Bản ghi này không có dữ liệu mới hợp lệ để phê duyệt.
     </div>
@@ -136,7 +136,7 @@
             [maxLength]="rejectReasonMaxLength"
             rows="4"
             placeholder="Nhập lý do từ chối"
-            class="w-full rounded-xl border border-[#0f9f98] px-4 py-3 pr-16 text-sm outline-none focus:ring-2 focus:ring-[#0f9f98]/20"
+            class="w-full rounded-xl border border-[#0f9f98] px-4 py-3 pr-16 text-sm outline-none focus:ring-2 focus:ring-[#0f9f98]/20 resize-none"
           ></textarea>
 
           <div class="absolute bottom-3 right-3 text-xs text-gray-400">

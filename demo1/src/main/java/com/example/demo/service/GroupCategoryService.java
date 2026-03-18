@@ -12,7 +12,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -44,7 +43,7 @@ public class GroupCategoryService {
         entity.setStatus(STATUS_DRAFT);
         entity.setIsActive(req.isActive() == null ? 1 : req.isActive());
         entity.setIsDisplay(req.isDisplay() == null ? 1 : req.isDisplay());
-        entity.setNewData(null);
+        entity.setNewData("{}");
 
         return repository.save(entity);
     }
@@ -122,7 +121,7 @@ public class GroupCategoryService {
                 cur.setEffectiveDate(pending.getEffectiveDate());
                 cur.setEndEffectiveDate(pending.getEndEffectiveDate());
 
-                cur.setNewData(null);
+                cur.setNewData("{}");
             } catch (Exception e) {
                 throw new RuntimeException("NEW_DATA không đúng định dạng JSON", e);
             }

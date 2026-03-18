@@ -14,8 +14,6 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Entity
 @Table(name = "PMH_GROUP_CATEGORY")
-
-
 public class GroupCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "pmh_group_cat_seq")
