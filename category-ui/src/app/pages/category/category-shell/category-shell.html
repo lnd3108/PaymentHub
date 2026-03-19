@@ -1,7 +1,7 @@
-﻿<div class="min-h-screen bg-[#f5f7f9]">
-  <div class="flex min-h-screen">
-    <aside class="hidden w-[280px] border-r border-gray-200 bg-white xl:block">
-      <div class="flex h-full flex-col">
+﻿<div class="h-screen overflow-hidden bg-[#f5f7f9]">
+  <div class="flex h-full">
+    <aside class="hidden h-screen w-[280px] shrink-0 sticky top-0 border-r border-gray-200 bg-white xl:block">
+      <div class="flex h-full flex-col overflow-y-auto">
         <div class="border-b border-b-gray-200 px-6 py-5">
           <div class="text-xl font-bold text-[#006c67]">PAYMENTHUB</div>
         </div>
@@ -10,7 +10,7 @@
           <a
             routerLink="/categories"
             routerLinkActive="bg-[#d8f0ec] text-[#006c67] font-medium"
-            [routerLinkActiveOptions] = "{exact: false}"
+            [routerLinkActiveOptions]="{ exact: false }"
             class="block rounded-xl px-4 py-3 text-gray-700 hover:bg-gray-50"
           >
             Tham số danh mục theo nhóm
@@ -26,10 +26,10 @@
       </div>
     </aside>
 
-    <div class="flex min-w-0 flex-1 flex-col">
-      <header class="flex h-[76px] items-center justify-end border-b border-gray-200 bg-white px-6">
+    <div class="flex min-w-0 flex-1 flex-col h-screen overflow-hidden">
+      <header class="shrink-0 flex h-[76px] items-center justify-end border-b border-gray-200 bg-white px-6">
         <div class="flex items-center gap-4">
-          <button class="relative flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 ">
+          <button class="relative flex h-10 w-10 items-center justify-center rounded-full text-gray-500 hover:bg-gray-100">
             <span class="text-lg">🔔</span>
             <span class="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold text-white">
               9+
@@ -51,9 +51,9 @@
         </div>
       </header>
 
-      <main class="flex-1 p-6">
+      <main class="flex-1 overflow-y-auto p-6">
         <div class="mx-auto max-w-7xl">
-          <router-outlet/>
+          <router-outlet></router-outlet>
         </div>
       </main>
     </div>

@@ -49,20 +49,19 @@ export class CategoryDetailPage implements OnInit {
     this.categoryService.getById(id).subscribe({
       next: (data) => {
         const parsedNewData = this.parseNewData(data);
+        const hasNewData = !!parsedNewData && Object.keys(parsedNewData).length > 0;
 
-        if (this.mode === 'approve') {
+        if (this.mode === 'detail' || this.mode === 'cancel-approve') {
           this.oldData = data;
-          this.newData =
-            parsedNewData && Object.keys(parsedNewData).length > 0 ? parsedNewData : null;
-        } else if (this.mode === 'submit') {
+          this.newData = null;
+        } else if (hasNewData) {
+          // luồng sửa: bên trái là cũ, bên phải là mới
+          this.oldData = data;
+          this.newData = parsedNewData;
+        } else {
+          // luồng tạo mới / không có newData: bên trái rỗng, bên phải là dữ liệu hiện tại
           this.oldData = null;
           this.newData = data;
-        } else if (this.mode === 'detail') {
-          this.oldData = data;
-          this.newData = null;
-        } else {
-          this.oldData = data;
-          this.newData = null;
         }
 
         this.loading = false;
@@ -104,11 +103,6 @@ export class CategoryDetailPage implements OnInit {
 
   confirmApprove(): void {
     if (!this.id) return;
-
-    if (!this.newData) {
-      this.toastr.warning('Bản ghi này không có dữ liệu mới để phê duyệt', 'Cảnh báo');
-      return;
-    }
 
     this.categoryService.approve(this.id).subscribe({
       next: () => {

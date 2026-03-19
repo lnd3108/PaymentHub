@@ -6,6 +6,7 @@ import com.example.demo.entity.GroupCategory;
 import com.example.demo.repository.GroupCategoryRepository;
 import com.example.demo.repository.GroupCategorySpecs;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +25,9 @@ public class GroupCategoryService {
     private static final int STATUS_REJECTED = 5;
     private static final int STATUS_CANCEL_APPROVE = 7;
 
+    private static final int DISPLAY_HIDDEN = 1;
+    private static final int DISPLAY_VISIBLE = 2;
+
     private final GroupCategoryRepository repository;
     private final ObjectMapper objectMapper;
 
@@ -32,9 +36,9 @@ public class GroupCategoryService {
         this.objectMapper = objectMapper;
     }
 
-    public GroupCategory create(GroupCategoryUpsertReq req) {
+    public GroupCategory create(GroupCategoryUpsertReq req){
         validateRequired(req);
-        validateDuplicateForCreate(req);
+        validateDuplicateForUpsert(req, null);
 
         GroupCategory entity = new GroupCategory();
         applyNormalData(entity, req);
@@ -43,14 +47,14 @@ public class GroupCategoryService {
         entity.setStatus(STATUS_DRAFT);
         entity.setIsActive(req.isActive() == null ? 1 : req.isActive());
         entity.setIsDisplay(req.isDisplay() == null ? 1 : req.isDisplay());
-        entity.setNewData("{}");
+        entity.setNewData(null);
 
         return repository.save(entity);
     }
 
     public GroupCategory createAndSubmit(GroupCategoryUpsertReq req) {
         validateRequired(req);
-        validateDuplicateForCreate(req);
+        validateDuplicateForUpsert(req, null);
 
         GroupCategory entity = new GroupCategory();
         applyNormalData(entity, req);
@@ -58,22 +62,22 @@ public class GroupCategoryService {
         entity.setId(null);
         entity.setStatus(STATUS_PENDING);
         entity.setIsActive(req.isActive() == null ? 1 : req.isActive());
-        entity.setIsDisplay(req.isDisplay() == null ? 1 : req.isDisplay());
-
-        entity.setNewData(toJson(entity));
+        entity.setIsDisplay(req.isDisplay() == null ? DISPLAY_HIDDEN : req.isDisplay());
+        entity.setNewData(null);
 
         return repository.save(entity);
     }
 
     public GroupCategory update(Long id, GroupCategoryUpsertReq req) {
         validateRequired(req);
+        validateDuplicateForUpsert(req, id);
 
         GroupCategory cur = getRequired(id);
 
-        if (Objects.equals(cur.getStatus(), STATUS_APPROVED)) {
+        if (Objects.equals(cur.getStatus(), STATUS_APPROVED) || Objects.equals(cur.getIsDisplay(), DISPLAY_VISIBLE)) {
             GroupCategory pending = cloneForPending(cur, req);
             cur.setNewData(toJson(pending));
-            cur.setStatus(STATUS_PENDING);
+
             return repository.save(cur);
         }
 
@@ -87,13 +91,18 @@ public class GroupCategoryService {
     public GroupCategory submit(Long id) {
         GroupCategory cur = getRequired(id);
 
-        if (Objects.equals(cur.getStatus(), STATUS_APPROVED)) {
-            throw new RuntimeException("Bản ghi đã được phê duyệt, không thể gửi duyệt lại trực tiếp");
+        if (Objects.equals(cur.getStatus(), STATUS_PENDING)) {
+            throw new RuntimeException("Bản ghi đang ở trạng thái chờ phê duyệt");
+        }
+
+        if ((Objects.equals(cur.getStatus(), STATUS_APPROVED) || Objects.equals(cur.getIsDisplay(), DISPLAY_VISIBLE))
+                && !hasMeaningfulNewData(cur.getNewData())) {
+            throw new RuntimeException("Không có dữ liệu thay đổi để gửi duyệt");
         }
 
         cur.setStatus(STATUS_PENDING);
 
-        if (cur.getNewData() == null || cur.getNewData().isBlank()) {
+        if(!hasMeaningfulNewData(cur.getNewData()) && !Objects.equals(cur.getIsDisplay(), DISPLAY_VISIBLE)){
             cur.setNewData(toJson(cur));
         }
 
@@ -107,28 +116,20 @@ public class GroupCategoryService {
             throw new RuntimeException("Chỉ bản ghi chờ phê duyệt mới được duyệt");
         }
 
-        if (cur.getNewData() != null && !cur.getNewData().isBlank()) {
-            try {
-                GroupCategory pending = objectMapper.readValue(cur.getNewData(), GroupCategory.class);
+        GroupCategory target = cur;
 
-                cur.setParamName(pending.getParamName());
-                cur.setParamValue(pending.getParamValue());
-                cur.setParamType(pending.getParamType());
-                cur.setDescription(pending.getDescription());
-                cur.setComponentCode(pending.getComponentCode());
-                cur.setIsActive(pending.getIsActive());
-                cur.setIsDisplay(pending.getIsDisplay());
-                cur.setEffectiveDate(pending.getEffectiveDate());
-                cur.setEndEffectiveDate(pending.getEndEffectiveDate());
-
-                cur.setNewData("{}");
-            } catch (Exception e) {
-                throw new RuntimeException("NEW_DATA không đúng định dạng JSON", e);
-            }
+        if (hasMeaningfulNewData(cur.getNewData())) {
+            GroupCategory pending = parseNewData(cur.getNewData());
+            validateDuplicateForEntity(pending, cur.getId());
+            applyEntityData(cur, pending);
+        } else {
+            validateDuplicateForEntity(cur, cur.getId());
         }
 
         cur.setStatus(STATUS_APPROVED);
-        cur.setIsDisplay(2);
+        cur.setIsDisplay(DISPLAY_VISIBLE);
+        cur.setNewData(null);
+
         return repository.save(cur);
     }
 
@@ -140,14 +141,9 @@ public class GroupCategoryService {
         }
 
         cur.setStatus(STATUS_REJECTED);
-        cur.setIsDisplay(1);
-
-        if (reason != null && !reason.isBlank()) {
-            String oldDesc = cur.getDescription() == null ? "" : cur.getDescription();
-            String suffix = oldDesc.isBlank() ? "" : " | ";
-            cur.setDescription(oldDesc + suffix + "Lý do từ chối: " + reason);
+        if (cur.getIsDisplay() == null) {
+            cur.setIsDisplay(DISPLAY_HIDDEN);
         }
-
         return repository.save(cur);
     }
 
@@ -155,20 +151,21 @@ public class GroupCategoryService {
         GroupCategory cur = getRequired(id);
 
         if (!Objects.equals(cur.getStatus(), STATUS_APPROVED)) {
-            throw new RuntimeException("Chỉ bản ghi chờ phê duyệt mới được hủy duyệt");
+            throw new RuntimeException("Chỉ bản ghi đã phê duyệt mới được hủy duyệt");
         }
 
         cur.setStatus(STATUS_CANCEL_APPROVE);
-        cur.setIsDisplay(1);
+        cur.setIsDisplay(DISPLAY_VISIBLE);
         cur.setNewData(null);
+
         return repository.save(cur);
     }
 
     public void delete(Long id) {
         GroupCategory cur = getRequired(id);
 
-        if (Objects.equals(cur.getStatus(), STATUS_APPROVED) || Objects.equals(cur.getIsDisplay(), 2)) {
-            throw new RuntimeException("Bản ghi đã duyệt thì không được xóa");
+        if (Objects.equals(cur.getStatus(), STATUS_APPROVED) || Objects.equals(cur.getIsDisplay(), DISPLAY_VISIBLE)) {
+            throw new RuntimeException("Bản ghi đã duyệt hoặc đang hiển thị thì không được xóa");
         }
 
         repository.delete(cur);
@@ -202,11 +199,31 @@ public class GroupCategoryService {
         }
     }
 
-    private void validateDuplicateForCreate(GroupCategoryUpsertReq req) {
-        boolean exists = repository.existsByParamNameAndParamValueAndParamType(
+    private void validateDuplicateForUpsert(GroupCategoryUpsertReq req, Long excludeId) {
+        boolean exists = excludeId == null
+                ? repository.existsByParamNameAndParamValueAndParamType(
                 req.paramName(),
                 req.paramValue(),
                 req.paramType()
+        )
+                : repository.existsByParamNameAndParamValueAndParamTypeAndIdNot(
+                req.paramName(),
+                req.paramValue(),
+                req.paramType(),
+                excludeId
+        );
+
+        if (exists) {
+            throw new RuntimeException("Bản ghi đã tồn tại với bộ paramName + paramValue + paramType");
+        }
+    }
+
+    private void validateDuplicateForEntity(GroupCategory entity, Long excludeId) {
+        boolean exists = repository.existsByParamNameAndParamValueAndParamTypeAndIdNot(
+                entity.getParamName(),
+                entity.getParamValue(),
+                entity.getParamType(),
+                excludeId
         );
 
         if (exists) {
@@ -224,6 +241,18 @@ public class GroupCategoryService {
         entity.setEndEffectiveDate(req.endEffectiveDate());
     }
 
+    private void applyEntityData(GroupCategory target, GroupCategory source) {
+        target.setParamName(source.getParamName());
+        target.setParamValue(source.getParamValue());
+        target.setParamType(source.getParamType());
+        target.setDescription(source.getDescription());
+        target.setComponentCode(source.getComponentCode());
+        target.setIsActive(source.getIsActive());
+        target.setIsDisplay(source.getIsDisplay());
+        target.setEffectiveDate(source.getEffectiveDate());
+        target.setEndEffectiveDate(source.getEndEffectiveDate());
+    }
+
     private GroupCategory cloneForPending(GroupCategory cur, GroupCategoryUpsertReq req) {
         GroupCategory pending = new GroupCategory();
         pending.setId(cur.getId());
@@ -239,6 +268,40 @@ public class GroupCategoryService {
         pending.setEndEffectiveDate(req.endEffectiveDate());
         pending.setNewData(null);
         return pending;
+    }
+
+    private GroupCategory parseNewData(String newData) {
+        try {
+            return objectMapper.readValue(newData, GroupCategory.class);
+        } catch (Exception e) {
+            throw new RuntimeException("NEW_DATA không đúng định dạng JSON", e);
+        }
+    }
+
+    private boolean hasMeaningfulNewData(String newData) {
+        if (isBlank(newData)) {
+            return false;
+        }
+
+        String trimmed = newData.trim();
+        if ("{}".equals(trimmed) || "null".equalsIgnoreCase(trimmed)) {
+            return false;
+        }
+
+        try {
+            JsonNode node = objectMapper.readTree(trimmed);
+            if (node == null || node.isNull()) {
+                return false;
+            }
+
+            if ((node.isObject() || node.isArray()) && node.size() == 0) {
+                return false;
+            }
+
+            return true;
+        } catch (Exception e) {
+            return true;
+        }
     }
 
     private String toJson(GroupCategory req) {

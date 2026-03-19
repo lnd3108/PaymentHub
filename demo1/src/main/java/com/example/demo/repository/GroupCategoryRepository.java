@@ -19,4 +19,11 @@ public interface GroupCategoryRepository extends JpaRepository<GroupCategory, Lo
             String paramValue,
             String paramType
     );
+
+    boolean existsByParamNameAndParamValueAndParamTypeAndIdNot(
+            String paramName,
+            String paramValue,
+            String paramType,
+            Long id
+    );
 }
