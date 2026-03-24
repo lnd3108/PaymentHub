@@ -75,10 +75,6 @@ export class CategoryList implements OnInit {
         this.page = res?.number ?? 0;
         this.size = res?.size ?? this.size;
 
-        // if (this.page === 0) {
-        //   this.buildFilterOptions(this.categories);
-        // }
-
         this.loading = false;
       },
       error: (err) => {

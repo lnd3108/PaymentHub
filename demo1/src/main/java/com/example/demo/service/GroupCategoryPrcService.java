@@ -1,5 +1,6 @@
 package com.example.demo.service;
 
+import com.example.demo.common.response.PageResponse;
 import com.example.demo.dto.GroupCategoryCreateReq;
 import com.example.demo.dto.GroupCategorySearchReq;
 import com.example.demo.dto.GroupCategoryUpdateReq;
@@ -22,8 +23,8 @@ public class GroupCategoryPrcService {
         return repository.create(req);
     }
 
-    public List<GroupCategory> getAll(){
-        return repository.getAll();
+    public PageResponse<GroupCategory> getAll(int page, int size){
+        return repository.getAll(page, size);
     }
 
     public GroupCategory getById(Long id){
@@ -38,7 +39,7 @@ public class GroupCategoryPrcService {
         repository.delete(id);
     }
 
-    public List<GroupCategory> search(GroupCategorySearchReq req) {
+    public PageResponse<GroupCategory> search(GroupCategorySearchReq req) {
         return repository.search(req);
     }
 }

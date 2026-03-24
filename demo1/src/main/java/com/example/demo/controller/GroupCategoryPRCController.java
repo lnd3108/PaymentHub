@@ -1,13 +1,13 @@
 package com.example.demo.controller;
 
+import com.example.demo.common.response.ApiResponse;
+import com.example.demo.common.response.PageResponse;
 import com.example.demo.dto.GroupCategoryCreateReq;
 import com.example.demo.dto.GroupCategorySearchReq;
 import com.example.demo.dto.GroupCategoryUpdateReq;
 import com.example.demo.entity.GroupCategory;
 import com.example.demo.service.GroupCategoryPrcService;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @CrossOrigin("http://localhost:4200/")
 @RestController
@@ -21,34 +21,37 @@ public class GroupCategoryPRCController {
     }
 
     @PostMapping
-    public Long create(@RequestBody GroupCategoryCreateReq req){
-        return service.create(req);
+    public ApiResponse<Long> create(@RequestBody GroupCategoryCreateReq req){
+        return ApiResponse.success(service.create(req));
     }
 
     @GetMapping
-    public List<GroupCategory> getAll(){
-        return service.getAll();
+    public ApiResponse<PageResponse<GroupCategory>> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ){
+        return ApiResponse.success(service.getAll(page, size));
     }
 
     @GetMapping("/{id}")
-    public GroupCategory getById(@PathVariable Long id){
-        return service.getById(id);
+    public ApiResponse<GroupCategory> getById(@PathVariable Long id){
+        return ApiResponse.success(service.getById(id));
     }
 
     @PutMapping("/{id}")
-    public Long update(@PathVariable Long id, @RequestBody GroupCategoryUpdateReq req) {
-        return service.update(id, req);
+    public ApiResponse<Long> update(@PathVariable Long id, @RequestBody GroupCategoryUpdateReq req) {
+        return ApiResponse.success(service.update(id, req));
     }
 
     @DeleteMapping("/{id}")
-    public String delete(@PathVariable Long id) {
+    public ApiResponse<String> delete(@PathVariable Long id) {
         service.delete(id);
-        return "Deleted successfully";
+        return ApiResponse.success("Deleted successfully", "OK");
     }
 
     @PostMapping("/search")
-    public List<GroupCategory> search(@RequestBody GroupCategorySearchReq req) {
-        return service.search(req);
+    public ApiResponse<PageResponse<GroupCategory>> search(@RequestBody GroupCategorySearchReq req) {
+        return ApiResponse.success(service.search(req));
     }
 
 

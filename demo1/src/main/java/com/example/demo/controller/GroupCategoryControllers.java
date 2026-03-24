@@ -1,5 +1,7 @@
 package com.example.demo.controller;
 
+import com.example.demo.common.response.ApiResponse;
+import com.example.demo.common.response.PageResponse;
 import com.example.demo.dto.GroupCategoryResponse;
 import com.example.demo.dto.GroupCategorySearchReq;
 import com.example.demo.dto.GroupCategoryUpsertReq;
@@ -12,7 +14,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
@@ -27,62 +28,72 @@ public class GroupCategoryControllers {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public GroupCategoryResponse create(@RequestBody GroupCategoryUpsertReq req) {
-        return GroupCategoryResponse.from(service.create(req));
+    public ApiResponse<GroupCategoryResponse> create(@RequestBody GroupCategoryUpsertReq req) {
+        return ApiResponse.success("Create success", GroupCategoryResponse.from(service.create(req)));
     }
 
     @PostMapping("/submit-create")
     @ResponseStatus(HttpStatus.CREATED)
-    public GroupCategoryResponse createAndSubmit(@RequestBody GroupCategoryUpsertReq req) {
-        return GroupCategoryResponse.from(service.createAndSubmit(req));
+    public ApiResponse<GroupCategoryResponse> createAndSubmit(@RequestBody GroupCategoryUpsertReq req) {
+        return ApiResponse.success("Create and submit success", GroupCategoryResponse.from(service.createAndSubmit(req)));
     }
 
     @GetMapping
-    public Page<GroupCategory> getAll(@PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC)Pageable pageable) {
-        return service.getCategory(pageable);
+    public ApiResponse<PageResponse<GroupCategoryResponse>> getAll(
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+    ) {
+        Page<GroupCategory> pageData = service.getCategory(pageable);
+        PageResponse<GroupCategoryResponse> response =
+                PageResponse.from(pageData, GroupCategoryResponse::from);
+
+        return ApiResponse.success(response);
     }
 
     @GetMapping("/{id}")
-    public GroupCategory getById(@PathVariable Long id) {
-        return service.getCategoryById(id);
+    public ApiResponse<GroupCategoryResponse> getById(@PathVariable Long id) {
+        return ApiResponse.success(GroupCategoryResponse.from(service.getCategoryById(id)));
     }
 
     @PutMapping("/{id}")
-    public GroupCategoryResponse update(@PathVariable Long id, @RequestBody GroupCategoryUpsertReq req) {
-        return GroupCategoryResponse.from(service.update(id, req));
+    public ApiResponse<GroupCategoryResponse> update(@PathVariable Long id, @RequestBody GroupCategoryUpsertReq req) {
+        return ApiResponse.success("Update success", GroupCategoryResponse.from(service.update(id, req)));
     }
 
     @PostMapping("/{id}/submit")
-    public GroupCategoryResponse submit(@PathVariable Long id) {
-        return GroupCategoryResponse.from(service.submit(id));
+    public ApiResponse<GroupCategoryResponse> submit(@PathVariable Long id) {
+        return ApiResponse.success("Submit success", GroupCategoryResponse.from(service.submit(id)));
     }
 
     @PostMapping("/{id}/approve")
-    public GroupCategoryResponse approve(@PathVariable Long id) {
-        return GroupCategoryResponse.from(service.approve(id));
+    public ApiResponse<GroupCategoryResponse> approve(@PathVariable Long id) {
+        return ApiResponse.success("Approve success", GroupCategoryResponse.from(service.approve(id)));
     }
 
     @PostMapping("/{id}/reject")
-    public GroupCategoryResponse reject(@PathVariable Long id, @RequestBody RejectReq req) {
-        return GroupCategoryResponse.from(service.reject(id, req.reason()));
+    public ApiResponse<GroupCategoryResponse> reject(@PathVariable Long id, @RequestBody RejectReq req) {
+        return ApiResponse.success("Reject success", GroupCategoryResponse.from(service.reject(id, req.reason())));
     }
 
     @PostMapping("/{id}/cancel-approve")
-    public GroupCategoryResponse cancelApprove(@PathVariable Long id) {
-        return GroupCategoryResponse.from(service.cancelApprove(id));
+    public ApiResponse<GroupCategoryResponse> cancelApprove(@PathVariable Long id) {
+        return ApiResponse.success("Cancel approve success", GroupCategoryResponse.from(service.cancelApprove(id)));
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    public ApiResponse<String> delete(@PathVariable Long id) {
         service.delete(id);
+        return ApiResponse.success("Delete success", "Deleted successfully");
     }
 
     @PostMapping("/search")
-    public Page<GroupCategory> search(
+    public ApiResponse<PageResponse<GroupCategoryResponse>> search(
             @RequestBody GroupCategorySearchReq req,
-            @PageableDefault(size = 2000, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return service.search(req, pageable);
+        Page<GroupCategory> pageData = service.search(req, pageable);
+        PageResponse<GroupCategoryResponse> response =
+                PageResponse.from(pageData, GroupCategoryResponse::from);
+
+        return ApiResponse.success(response);
     }
 }

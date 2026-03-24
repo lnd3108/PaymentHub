@@ -7,6 +7,8 @@ public record GroupCategorySearchReq(
         String paramValue,
         String paramType,
         List<Integer> status,
-        List<Integer> isActive
+        List<Integer> isActive,
+        Integer page,
+        Integer size
 ){
 }

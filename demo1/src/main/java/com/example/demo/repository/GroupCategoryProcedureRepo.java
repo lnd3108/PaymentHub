@@ -1,5 +1,6 @@
 package com.example.demo.repository;
 
+import com.example.demo.common.response.PageResponse;
 import com.example.demo.dto.GroupCategoryCreateReq;
 import com.example.demo.dto.GroupCategorySearchReq;
 import com.example.demo.dto.GroupCategoryUpdateReq;
@@ -24,7 +25,7 @@ public class GroupCategoryProcedureRepo {
     private EntityManager em;
 
     public Long create(GroupCategoryCreateReq req){
-        StoredProcedureQuery sp = em.createStoredProcedureQuery("PRC_GC_CREATE");
+        StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_CREATE");
 
         sp.registerStoredProcedureParameter("P_PARAM_NAME", String.class, ParameterMode.IN);
         sp.registerStoredProcedureParameter("P_PARAM_VALUE", String.class, ParameterMode.IN);
@@ -56,26 +57,34 @@ public class GroupCategoryProcedureRepo {
     }
 
     @SuppressWarnings("unchecked")
-    public List<GroupCategory> getAll() {
-        StoredProcedureQuery sp = em.createStoredProcedureQuery("PRC_GC_GET_ALL");
+    public PageResponse<GroupCategory> getAll(int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 10 : Math.min(size, 100);
 
+        StoredProcedureQuery sp= em.createStoredProcedureQuery("LND_PRC_GC_GET_ALL_PAGE");
+
+        sp.registerStoredProcedureParameter("P_PAGE", Integer.class, ParameterMode.IN);
+        sp.registerStoredProcedureParameter("P_SIZE", Integer.class, ParameterMode.IN);
+        sp.registerStoredProcedureParameter("P_TOTAL", Long.class, ParameterMode.OUT);
         sp.registerStoredProcedureParameter("P_CURSOR", void.class, ParameterMode.REF_CURSOR);
 
-        sp.execute();
+        sp.setParameter("P_PAGE", safePage);
+        sp.setParameter("P_SIZE", safeSize);
 
         List<Object[]> rows = sp.getResultList();
         List<GroupCategory> result = new ArrayList<>();
-
-        for (Object[] row : rows) {
+        for(Object[] row : rows){
             result.add(mapRow(row));
         }
 
-        return result;
+        long total = ((Number) sp.getOutputParameterValue("P_TOTAL")).longValue();
+
+        return PageResponse.fromNative(result, safePage, safeSize, total, "effectiveDate", "desc", item -> item);
     }
 
     @SuppressWarnings("unchecked")
     public GroupCategory getById(Long id){
-        StoredProcedureQuery sp = em.createStoredProcedureQuery("PRC_GC_GET_BY_ID");
+        StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_GET_BY_ID");
 
         sp.registerStoredProcedureParameter("P_ID", Long.class, ParameterMode.IN);
         sp.registerStoredProcedureParameter("P_CURSOR", void.class, ParameterMode.REF_CURSOR);
@@ -92,7 +101,7 @@ public class GroupCategoryProcedureRepo {
     }
 
     public Long update (Long id, GroupCategoryUpdateReq req){
-        StoredProcedureQuery sp = em.createStoredProcedureQuery("PRC_GC_UPDATE");
+        StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_UPDATE");
 
         sp.registerStoredProcedureParameter("P_ID", Long.class, ParameterMode.IN);
         sp.registerStoredProcedureParameter("P_PARAM_NAME", String.class, ParameterMode.IN);
@@ -123,22 +132,27 @@ public class GroupCategoryProcedureRepo {
     }
 
     public void delete(Long id){
-        StoredProcedureQuery sp = em.createStoredProcedureQuery("PRC_GC_DELETE");
+        StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_DELETE");
 
         sp.registerStoredProcedureParameter("P_ID", Long.class, ParameterMode.IN);
         sp.setParameter("P_ID", id);
-
         sp.execute();
     }
 
-    public List<GroupCategory> search(GroupCategorySearchReq req) {
-        StoredProcedureQuery sp = em.createStoredProcedureQuery("PRC_GC_SEARCH");
+    public PageResponse<GroupCategory> search(GroupCategorySearchReq req) {
+        int safePage = req.page() == null || req.page() < 0 ? 0 : req.page();
+        int safeSize = req.size() == null || req.size() <= 0 ? 10 : Math.min(req.size(), 100);
+
+        StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_SEARCH_PAGE");
 
         sp.registerStoredProcedureParameter("P_PARAM_NAME", String.class, ParameterMode.IN);
         sp.registerStoredProcedureParameter("P_PARAM_VALUE", String.class, ParameterMode.IN);
         sp.registerStoredProcedureParameter("P_PARAM_TYPE", String.class, ParameterMode.IN);
         sp.registerStoredProcedureParameter("P_STATUS", String.class, ParameterMode.IN);
         sp.registerStoredProcedureParameter("P_IS_ACTIVE", String.class, ParameterMode.IN);
+        sp.registerStoredProcedureParameter("P_PAGE", Integer.class, ParameterMode.IN);
+        sp.registerStoredProcedureParameter("P_SIZE", Integer.class, ParameterMode.IN);
+        sp.registerStoredProcedureParameter("P_TOTAL", Long.class, ParameterMode.OUT);
         sp.registerStoredProcedureParameter("P_CURSOR", void.class, ParameterMode.REF_CURSOR);
 
         sp.setParameter("P_PARAM_NAME", emptyToNull(req.paramName()));
@@ -146,18 +160,20 @@ public class GroupCategoryProcedureRepo {
         sp.setParameter("P_PARAM_TYPE", emptyToNull(req.paramType()));
         sp.setParameter("P_STATUS", joinIntegerList(req.status()));
         sp.setParameter("P_IS_ACTIVE", joinIntegerList(req.isActive()));
+        sp.setParameter("P_PAGE", safePage);
+        sp.setParameter("P_SIZE", safeSize);
 
         sp.execute();
 
-        @SuppressWarnings("unchecked")
         List<Object[]> rows = sp.getResultList();
-
         List<GroupCategory> result = new ArrayList<>();
         for (Object[] row : rows) {
             result.add(mapRow(row));
         }
 
-        return result;
+        long total = ((Number) sp.getOutputParameterValue("P_TOTAL")).longValue();
+
+        return PageResponse.fromNative(result, safePage, safeSize, total, "effectiveDate", "desc", item -> item);
     }
 
     private GroupCategory mapRow(Object[] row){
@@ -213,5 +229,4 @@ public class GroupCategoryProcedureRepo {
         }
         return value.trim();
     }
-
 }

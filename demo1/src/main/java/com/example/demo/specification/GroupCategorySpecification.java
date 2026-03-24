@@ -1,4 +1,4 @@
-package com.example.demo.repository;
+package com.example.demo.specification;
 
 import com.example.demo.dto.GroupCategorySearchReq;
 import com.example.demo.entity.GroupCategory;
@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import jakarta.persistence.criteria.Predicate;
 
-public class GroupCategorySpecs {
+public class GroupCategorySpecification {
 
     public static Specification<GroupCategory> search(GroupCategorySearchReq req) {
         return (root, query, cb) -> {

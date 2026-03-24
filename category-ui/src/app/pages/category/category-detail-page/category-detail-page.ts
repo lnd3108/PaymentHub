@@ -55,11 +55,9 @@ export class CategoryDetailPage implements OnInit {
           this.oldData = data;
           this.newData = null;
         } else if (hasNewData) {
-          // luồng sửa: bên trái là cũ, bên phải là mới
           this.oldData = data;
           this.newData = parsedNewData;
         } else {
-          // luồng tạo mới / không có newData: bên trái rỗng, bên phải là dữ liệu hiện tại
           this.oldData = null;
           this.newData = data;
         }

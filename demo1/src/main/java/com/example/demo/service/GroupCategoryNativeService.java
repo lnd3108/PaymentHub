@@ -1,10 +1,12 @@
 package com.example.demo.service;
 
+import com.example.demo.common.response.PageResponse;
 import com.example.demo.dto.GroupCategoryCreateReq;
 import com.example.demo.dto.GroupCategorySearchReq;
 import com.example.demo.dto.GroupCategoryUpdateReq;
 import com.example.demo.entity.GroupCategory;
 import com.example.demo.repository.GroupCategoryNativeRepository;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,8 +24,8 @@ public class GroupCategoryNativeService {
         return repository.create(req);
     }
 
-    public List<GroupCategory> getAll(){
-        return repository.getAll();
+    public PageResponse<GroupCategory> getAll(int page, int size){
+        return repository.getAll(page, size);
     }
 
     public GroupCategory getById(Long id) {
@@ -38,7 +40,7 @@ public class GroupCategoryNativeService {
         repository.delete(id);
     }
 
-    public List<GroupCategory> search(GroupCategorySearchReq req) {
-        return repository.search(req);
+    public PageResponse<GroupCategory> search(GroupCategorySearchReq req, int page, int size) {
+        return repository.search(req, page, size);
     }
 }

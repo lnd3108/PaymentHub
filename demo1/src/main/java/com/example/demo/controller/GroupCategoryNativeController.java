@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.common.response.PageResponse;
 import com.example.demo.dto.GroupCategoryCreateReq;
 import com.example.demo.dto.GroupCategorySearchReq;
 import com.example.demo.dto.GroupCategoryUpdateReq;
@@ -26,8 +27,11 @@ public class GroupCategoryNativeController {
     }
 
     @GetMapping
-    public List<GroupCategory> getAll() {
-        return service.getAll();
+    public PageResponse<GroupCategory> getAll(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return service.getAll(page, size);
     }
 
     @GetMapping("/{id}")
@@ -47,7 +51,11 @@ public class GroupCategoryNativeController {
     }
 
     @PostMapping("/search")
-    public List<GroupCategory> search(@RequestBody GroupCategorySearchReq req) {
-        return service.search(req);
+    public PageResponse<GroupCategory> search(
+            @RequestBody GroupCategorySearchReq req,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return service.search(req, page, size);
     }
 }

@@ -1,5 +1,6 @@
 package com.example.demo.repository;
 
+import com.example.demo.common.response.PageResponse;
 import com.example.demo.dto.GroupCategoryCreateReq;
 import com.example.demo.dto.GroupCategorySearchReq;
 import com.example.demo.dto.GroupCategoryUpdateReq;
@@ -7,6 +8,7 @@ import com.example.demo.entity.GroupCategory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.Query;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +22,29 @@ public class GroupCategoryNativeRepository {
 
     @PersistenceContext
     private EntityManager em;
+
+    private static final String TABLE_NAME = "PMH_GROUP_CATEGORY";
+
+    private static final String BASE_SELECT = """
+                SELECT
+                    ID,
+                    PARAM_NAME,
+                    PARAM_VALUE,
+                    PARAM_TYPE,
+                    DESCRIPTION,
+                    COMPONENT_CODE,
+                    STATUS,
+                    IS_ACTIVE,
+                    IS_DISPLAY,
+                    EFFECTIVE_DATE,
+                    END_EFFECTIVE_DATE
+                FROM PMH_GROUP_CATEGORY
+            """;
+
+    private static final String BASE_COUNT = """
+                SELECT COUNT(1)
+                FROM PMH_GROUP_CATEGORY
+            """;
 
     public Long create(GroupCategoryCreateReq req) {
         Long id = getNextId();
@@ -69,48 +94,30 @@ public class GroupCategoryNativeRepository {
         return id;
     }
 
-    public List<GroupCategory> getAll(){
-        String sql = """
-                    SELECT
-                        ID, PARAM_NAME, PARAM_VALUE, PARAM_TYPE, DESCRIPTION,
-                        COMPONENT_CODE, STATUS, IS_ACTIVE, IS_DISPLAY, EFFECTIVE_DATE, END_EFFECTIVE_DATE
-                    FROM PMH_GROUP_CATEGORY
-                    ORDER BY ID DESC
-                """;
+    public PageResponse<GroupCategory> getAll(int page, int size){
+        String sql = BASE_SELECT + " ORDER BY ID DESC";
+        String countSql = BASE_COUNT;
 
-        List<Object[]> rows = em.createNativeQuery(sql).getResultList();
-        List<GroupCategory> result = new ArrayList<>();
+        Query dataQuery = em.createNativeQuery(sql);
+        dataQuery.setFirstResult(page * size);
+        dataQuery.setMaxResults(size);
 
-        for(Object[] row : rows){
-            result.add(mapRow(row));
-        }
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = dataQuery.getResultList();
 
-        return result;
+        long total = ((Number) em.createNativeQuery(countSql).getSingleResult()).longValue();
+
+        return buildPageResponse(rows, page, size, total, "id", "desc");
     }
 
     public GroupCategory getById(Long id) {
-        String sql = """
-                SELECT
-                    ID,
-                    PARAM_NAME,
-                    PARAM_VALUE,
-                    PARAM_TYPE,
-                    DESCRIPTION,
-                    COMPONENT_CODE,
-                    STATUS,
-                    IS_ACTIVE,
-                    IS_DISPLAY,
-                    EFFECTIVE_DATE,
-                    END_EFFECTIVE_DATE
-                FROM PMH_GROUP_CATEGORY
-                WHERE ID = :id
-                """;
+        String sql = BASE_SELECT + " WHERE ID = :id";
 
         List<Object[]> rows = em.createNativeQuery(sql)
                 .setParameter("id", id)
                 .getResultList();
 
-        if (rows.isEmpty()) {
+        if(rows.isEmpty()){
             throw new RuntimeException("Không tìm thấy bản ghi với id = " + id);
         }
 
@@ -171,77 +178,34 @@ public class GroupCategoryNativeRepository {
         }
     }
 
-    public List<GroupCategory> search(GroupCategorySearchReq req) {
-        StringBuilder sql = new StringBuilder("""
-                SELECT
-                    ID,
-                    PARAM_NAME,
-                    PARAM_VALUE,
-                    PARAM_TYPE,
-                    DESCRIPTION,
-                    COMPONENT_CODE,
-                    STATUS,
-                    IS_ACTIVE,
-                    IS_DISPLAY,
-                    EFFECTIVE_DATE,
-                    END_EFFECTIVE_DATE
-                FROM PMH_GROUP_CATEGORY
-                WHERE 1 = 1
-                """);
+    public PageResponse<GroupCategory> search(GroupCategorySearchReq req, int page, int size) {
+        StringBuilder Where = new StringBuilder(" WHERE 1 = 1");
+        appendLikeCondition(Where, req.paramName(), "PARAM_NAME", "paramName");
+        appendLikeCondition(Where, req.paramValue(), "PARAM_VALUE", "paramValue");
+        appendLikeCondition(Where, req.paramType(), "PARAM_TYPE", "paramType");
+        appendInCondition(Where, req.status(), "STATUS", "status");
+        appendInCondition(Where, req.isActive(), "IS_ACTIVE", "isActive");
 
-        if (hasText(req.paramName())) {
-            sql.append(" AND UPPER(PARAM_NAME) LIKE UPPER(:paramName)");
-        }
+        String sql = BASE_SELECT + Where + " ORDER BY ID DESC";
+        String countSql = BASE_COUNT + Where;
 
-        if (hasText(req.paramValue())) {
-            sql.append(" AND UPPER(PARAM_VALUE) LIKE UPPER(:paramValue)");
-        }
+        Query dataQuery = em.createNativeQuery(sql);
+        Query countQuery = em.createNativeQuery(countSql);
 
-        if (hasText(req.paramType())) {
-            sql.append(" AND UPPER(PARAM_TYPE) LIKE UPPER(:paramType)");
-        }
+        setSearchParams(dataQuery, req);
+        setSearchParams(countQuery, req);
 
-        if (req.status() != null && !req.status().isEmpty()) {
-            sql.append(" AND STATUS IN (:status)");
-        }
+        dataQuery.setFirstResult(page * size);
 
-        if (req.isActive() != null && !req.isActive().isEmpty()) {
-            sql.append(" AND IS_ACTIVE IN (:isActive)");
-        }
+        @SuppressWarnings("unchecked")
+                List<Object[]> rows = dataQuery.getResultList();
 
-        sql.append(" ORDER BY ID DESC");
+        long total = ((Number) countQuery.getSingleResult()).longValue();
 
-        Query query = em.createNativeQuery(sql.toString());
-
-        if (hasText(req.paramName())) {
-            query.setParameter("paramName", "%" + req.paramName().trim() + "%");
-        }
-
-        if (hasText(req.paramValue())) {
-            query.setParameter("paramValue", "%" + req.paramValue().trim() + "%");
-        }
-
-        if (hasText(req.paramType())) {
-            query.setParameter("paramType", "%" + req.paramType().trim() + "%");
-        }
-
-        if (req.status() != null && !req.status().isEmpty()) {
-            query.setParameter("status", req.status());
-        }
-
-        if (req.isActive() != null && !req.isActive().isEmpty()) {
-            query.setParameter("isActive", req.isActive());
-        }
-
-        List<Object[]> rows = query.getResultList();
-        List<GroupCategory> result = new ArrayList<>();
-
-        for (Object[] row : rows) {
-            result.add(mapRow(row));
-        }
-
-        return result;
+        return buildPageResponse(rows, page, size, total, "id", "desc");
     }
+
+    //============================HELPER==========================
 
     private Long getNextId() {
         String sql = "SELECT PMH_GROUP_CATEGORY_SEQ.NEXTVAL FROM dual";
@@ -249,8 +213,40 @@ public class GroupCategoryNativeRepository {
         return number.longValue();
     }
 
-    private boolean hasText(String value) {
-        return value != null && !value.trim().isEmpty();
+    private PageResponse<GroupCategory> buildPageResponse(
+            @NonNull List<Object[]> rows,
+            int page,
+            int size,
+            long total,
+            String sortBy,
+            String sortDir
+    ){
+        List<GroupCategory> content = rows.stream()
+                .map(this::mapRow)
+                .toList();
+
+        int totalPages = (int) Math.ceil((double) total / size);
+
+        return PageResponse.<GroupCategory>builder()
+                .content(content)
+                .page(page)
+                .size(size)
+                .totalElements(total)
+                .totalPages(totalPages)
+                .first(page == 0)
+                .last(page + 1 >= totalPages)
+                .empty(content.isEmpty())
+                .sortBy(sortBy)
+                .sortDir(sortDir)
+                .build();
+    }
+
+    private void setSearchParams(Query query, GroupCategorySearchReq req){
+        setLikeParametter(query, req.paramName(), "paramName");
+        setLikeParametter(query, req.paramValue(), "paramValue");
+        setLikeParametter(query, req.paramType(), "paramType");
+        setInParametter(query, req.status(), "status");
+        setInParametter(query, req.isActive(), "isActive");
     }
 
     private GroupCategory mapRow(Object[] row) {
@@ -269,18 +265,51 @@ public class GroupCategoryNativeRepository {
         return entity;
     }
 
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
+    }
+
+    private void appendLikeCondition(StringBuilder sql, String value, String column, String param){
+        if(hasText(value)){
+            sql.append(" AND UPPER(")
+                    .append(column)
+                    .append(") LIKE UPPER(:")
+                    .append(param)
+                    .append(")");
+        }
+    }
+
+    private void appendInCondition(StringBuilder sql, List<?> values, String column, String param){
+        if(values != null && !values.isEmpty()){
+            sql.append(" AND ")
+                    .append(column)
+                    .append(" IN (:")
+                    .append(param)
+                    .append(")");
+        }
+    }
+
+    private void setLikeParametter(Query query, String value, String param){
+        if(hasText(value)){
+            query.setParameter(param, "%" + value.trim() + "%");
+        }
+    }
+
+    private void setInParametter(Query query, List<?> values, String param){
+        if(values != null && !values.isEmpty()){
+            query.setParameter(param, values);
+        }
+    }
+
     private Long toLong(Object value) {
-        if (value == null) return null;
-        return ((Number) value).longValue();
+        return value == null ? null : ((Number) value).longValue();
     }
 
     private Integer toInteger(Object value) {
-        if (value == null) return null;
-        return ((Number) value).intValue();
+        return value == null ? null : ((Number) value).intValue();
     }
 
     private java.time.LocalDate toLocalDate(Object value) {
-        if (value == null) return null;
         if (value instanceof Date date) {
             return date.toLocalDate();
         }
