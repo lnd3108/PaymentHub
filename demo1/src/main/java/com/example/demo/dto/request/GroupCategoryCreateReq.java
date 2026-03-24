@@ -1,17 +1,16 @@
-package com.example.demo.dto;
+package com.example.demo.dto.request;
 
 import java.time.LocalDate;
 
-public record GroupCategoryUpsertReq(
+public record GroupCategoryCreateReq(
         String paramName,
         String paramValue,
         String paramType,
         String description,
         String componentCode,
+        Integer status,
         Integer isActive,
         Integer isDisplay,
         String newData,
         LocalDate effectiveDate,
-        LocalDate endEffectiveDate
-) {
-}
+        LocalDate endEffectiveDate){}

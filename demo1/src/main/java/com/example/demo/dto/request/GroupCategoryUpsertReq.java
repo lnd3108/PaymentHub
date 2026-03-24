@@ -1,15 +1,13 @@
-package com.example.demo.dto;
+package com.example.demo.dto.request;
 
 import java.time.LocalDate;
 
-public record GroupCategoryDto(
-        Long id,
+public record GroupCategoryUpsertReq(
         String paramName,
         String paramValue,
         String paramType,
         String description,
         String componentCode,
-        Integer status,
         Integer isActive,
         Integer isDisplay,
         String newData,

@@ -6,14 +6,12 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public enum ErrorCode {
-    // Common
     INVALID_REQUEST("CM_400", HttpStatus.BAD_REQUEST, "Dữ liệu đầu vào không hợp lệ"),
     NOT_FOUND("CM_404", HttpStatus.NOT_FOUND, "Không tìm thấy dữ liệu"),
     CONFLICT("CM_409", HttpStatus.CONFLICT, "Dữ liệu đã tồn tại"),
     INVALID_STATE("CM_422", HttpStatus.UNPROCESSABLE_ENTITY, "Trạng thái dữ liệu không hợp lệ"),
     INTERNAL_ERROR("CM_500", HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi hệ thống"),
 
-    // Group Category
     GC_NOT_FOUND("GC_404", HttpStatus.NOT_FOUND, "Không tìm thấy nhóm danh mục"),
     GC_DUPLICATE("GC_409", HttpStatus.CONFLICT, "Bản ghi đã tồn tại"),
     GC_NO_CHANGES("GC_422", HttpStatus.UNPROCESSABLE_ENTITY, "Không có dữ liệu thay đổi"),

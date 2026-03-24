@@ -1,6 +1,6 @@
 package com.example.demo.specification;
 
-import com.example.demo.dto.GroupCategorySearchReq;
+import com.example.demo.dto.request.GroupCategorySearchReq;
 import com.example.demo.entity.GroupCategory;
 import org.springframework.data.jpa.domain.Specification;
 

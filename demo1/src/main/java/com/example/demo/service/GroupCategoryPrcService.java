@@ -1,14 +1,12 @@
 package com.example.demo.service;
 
-import com.example.demo.common.response.PageResponse;
-import com.example.demo.dto.GroupCategoryCreateReq;
-import com.example.demo.dto.GroupCategorySearchReq;
-import com.example.demo.dto.GroupCategoryUpdateReq;
+import com.example.demo.common.paging.PageResponse;
+import com.example.demo.dto.request.GroupCategoryCreateReq;
+import com.example.demo.dto.request.GroupCategorySearchReq;
+import com.example.demo.dto.request.GroupCategoryUpdateReq;
 import com.example.demo.entity.GroupCategory;
 import com.example.demo.repository.GroupCategoryProcedureRepo;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class GroupCategoryPrcService {

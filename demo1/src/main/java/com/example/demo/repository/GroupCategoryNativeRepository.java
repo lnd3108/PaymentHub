@@ -1,9 +1,9 @@
 package com.example.demo.repository;
 
-import com.example.demo.common.response.PageResponse;
-import com.example.demo.dto.GroupCategoryCreateReq;
-import com.example.demo.dto.GroupCategorySearchReq;
-import com.example.demo.dto.GroupCategoryUpdateReq;
+import com.example.demo.common.paging.PageResponse;
+import com.example.demo.dto.request.GroupCategoryCreateReq;
+import com.example.demo.dto.request.GroupCategorySearchReq;
+import com.example.demo.dto.request.GroupCategoryUpdateReq;
 import com.example.demo.entity.GroupCategory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -13,7 +13,6 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Date;
-import java.util.ArrayList;
 import java.util.List;
 
 @Repository

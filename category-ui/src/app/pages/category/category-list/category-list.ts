@@ -27,9 +27,6 @@ export class CategoryList implements OnInit {
   loading = false;
   error = '';
 
-  // statusOptions: { value: string; label: string }[] = [];
-  // activeOptions: { value: string; label: string }[] = [];
-
   statusOptions: { value: string; label: string }[] = [
     { value: '', label: 'Tất cả' },
     { value: '1', label: 'Tạo mới' },
@@ -72,8 +69,8 @@ export class CategoryList implements OnInit {
         this.categories = res?.content ?? [];
         this.totalElements = res?.totalElements ?? 0;
         this.totalPages = res?.totalPages ?? 0;
-        this.page = res?.number ?? 0;
-        this.size = res?.size ?? this.size;
+        this.page = res.page ?? 0;
+        this.size = res.size ?? this.size;
 
         this.loading = false;
       },

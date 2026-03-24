@@ -1,9 +1,9 @@
 package com.example.demo.repository;
 
-import com.example.demo.common.response.PageResponse;
-import com.example.demo.dto.GroupCategoryCreateReq;
-import com.example.demo.dto.GroupCategorySearchReq;
-import com.example.demo.dto.GroupCategoryUpdateReq;
+import com.example.demo.common.paging.PageResponse;
+import com.example.demo.dto.request.GroupCategoryCreateReq;
+import com.example.demo.dto.request.GroupCategorySearchReq;
+import com.example.demo.dto.request.GroupCategoryUpdateReq;
 import com.example.demo.entity.GroupCategory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
@@ -12,7 +12,6 @@ import jakarta.persistence.StoredProcedureQuery;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.swing.*;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.List;
@@ -143,7 +142,7 @@ public class GroupCategoryProcedureRepo {
         int safePage = req.page() == null || req.page() < 0 ? 0 : req.page();
         int safeSize = req.size() == null || req.size() <= 0 ? 10 : Math.min(req.size(), 100);
 
-        StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_SEARCH_PAGE");
+        StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_SEARCH_PAGE_2");
 
         sp.registerStoredProcedureParameter("P_PARAM_NAME", String.class, ParameterMode.IN);
         sp.registerStoredProcedureParameter("P_PARAM_VALUE", String.class, ParameterMode.IN);

@@ -1,11 +1,12 @@
 package com.example.demo.controller;
 
+import com.example.demo.common.paging.PagingRequest;
 import com.example.demo.common.response.ApiResponse;
-import com.example.demo.common.response.PageResponse;
-import com.example.demo.dto.GroupCategoryResponse;
-import com.example.demo.dto.GroupCategorySearchReq;
-import com.example.demo.dto.GroupCategoryUpsertReq;
-import com.example.demo.dto.RejectReq;
+import com.example.demo.common.paging.PageResponse;
+import com.example.demo.dto.response.GroupCategoryResponse;
+import com.example.demo.dto.request.GroupCategorySearchReq;
+import com.example.demo.dto.request.GroupCategoryUpsertReq;
+import com.example.demo.dto.request.GroupCategoryRejectReq;
 import com.example.demo.entity.GroupCategory;
 import com.example.demo.service.GroupCategoryService;
 import org.springframework.data.domain.Page;
@@ -39,14 +40,8 @@ public class GroupCategoryControllers {
     }
 
     @GetMapping
-    public ApiResponse<PageResponse<GroupCategoryResponse>> getAll(
-            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
-    ) {
-        Page<GroupCategory> pageData = service.getCategory(pageable);
-        PageResponse<GroupCategoryResponse> response =
-                PageResponse.from(pageData, GroupCategoryResponse::from);
-
-        return ApiResponse.success(response);
+    public ApiResponse<PageResponse<GroupCategoryResponse>> getAll(PagingRequest pagingRequest) {
+        return ApiResponse.success(service.getCategory(pagingRequest));
     }
 
     @GetMapping("/{id}")
@@ -70,7 +65,7 @@ public class GroupCategoryControllers {
     }
 
     @PostMapping("/{id}/reject")
-    public ApiResponse<GroupCategoryResponse> reject(@PathVariable Long id, @RequestBody RejectReq req) {
+    public ApiResponse<GroupCategoryResponse> reject(@PathVariable Long id, @RequestBody GroupCategoryRejectReq req) {
         return ApiResponse.success("Reject success", GroupCategoryResponse.from(service.reject(id, req.reason())));
     }
 
@@ -88,12 +83,8 @@ public class GroupCategoryControllers {
     @PostMapping("/search")
     public ApiResponse<PageResponse<GroupCategoryResponse>> search(
             @RequestBody GroupCategorySearchReq req,
-            @PageableDefault(size = 20, sort = "id", direction = Sort.Direction.DESC) Pageable pageable
+            PagingRequest pagingRequest
     ) {
-        Page<GroupCategory> pageData = service.search(req, pageable);
-        PageResponse<GroupCategoryResponse> response =
-                PageResponse.from(pageData, GroupCategoryResponse::from);
-
-        return ApiResponse.success(response);
+        return ApiResponse.success(service.search(req, pagingRequest));
     }
 }

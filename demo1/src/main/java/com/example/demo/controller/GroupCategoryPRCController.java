@@ -1,10 +1,10 @@
 package com.example.demo.controller;
 
 import com.example.demo.common.response.ApiResponse;
-import com.example.demo.common.response.PageResponse;
-import com.example.demo.dto.GroupCategoryCreateReq;
-import com.example.demo.dto.GroupCategorySearchReq;
-import com.example.demo.dto.GroupCategoryUpdateReq;
+import com.example.demo.common.paging.PageResponse;
+import com.example.demo.dto.request.GroupCategoryCreateReq;
+import com.example.demo.dto.request.GroupCategorySearchReq;
+import com.example.demo.dto.request.GroupCategoryUpdateReq;
 import com.example.demo.entity.GroupCategory;
 import com.example.demo.service.GroupCategoryPrcService;
 import org.springframework.web.bind.annotation.*;

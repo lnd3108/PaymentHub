@@ -1,8 +1,9 @@
-package com.example.demo.dto;
+package com.example.demo.dto.request;
 
 import java.time.LocalDate;
 
-public record GroupCategoryCreateReq(
+public record GroupCategoryUpdateReq(
+        Long id,
         String paramName,
         String paramValue,
         String paramType,
@@ -13,4 +14,6 @@ public record GroupCategoryCreateReq(
         Integer isDisplay,
         String newData,
         LocalDate effectiveDate,
-        LocalDate endEffectiveDate){}
+        LocalDate endEffectiveDate
+) {
+}

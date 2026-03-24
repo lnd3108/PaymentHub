@@ -1,16 +1,25 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { Category } from '../models/category.models';
 import { CategorySearch } from '../models/category-search.models';
 
+export interface ApiResponse<T> {
+  message?: string;
+  data: T;
+}
+
 export interface CategoryPageResponse {
   content: Category[];
+  page: number;
+  size: number;
   totalElements: number;
   totalPages: number;
-  number: number;
-  size: number;
+  first: boolean;
+  last: boolean;
   empty: boolean;
+  sortBy?: string | null;
+  sortDir?: string | null;
 }
 
 @Injectable({
@@ -26,23 +35,31 @@ export class CategoryService {
       .set('size', String(size))
       .set('sort', 'id,desc');
 
-    return this.http.get<CategoryPageResponse>(this.apiUrl, { params });
+    return this.http
+      .get<ApiResponse<CategoryPageResponse>>(this.apiUrl, { params })
+      .pipe(map((res) => res.data));
   }
 
   getById(id: number): Observable<Category> {
-    return this.http.get<Category>(`${this.apiUrl}/${id}`);
+    return this.http
+      .get<ApiResponse<Category>>(`${this.apiUrl}/${id}`)
+      .pipe(map((res) => res.data));
   }
 
   create(data: Category): Observable<Category> {
-    return this.http.post<Category>(this.apiUrl, data);
+    return this.http.post<ApiResponse<Category>>(this.apiUrl, data).pipe(map((res) => res.data));
   }
 
   update(id: number, data: Category): Observable<Category> {
-    return this.http.put<Category>(`${this.apiUrl}/${id}`, data);
+    return this.http
+      .put<ApiResponse<Category>>(`${this.apiUrl}/${id}`, data)
+      .pipe(map((res) => res.data));
   }
 
-  delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}/${id}`);
+  delete(id: number): Observable<string> {
+    return this.http
+      .delete<ApiResponse<string>>(`${this.apiUrl}/${id}`)
+      .pipe(map((res) => res.data));
   }
 
   search(data: Partial<CategorySearch>, page = 0, size = 20): Observable<CategoryPageResponse> {
@@ -51,26 +68,38 @@ export class CategoryService {
       .set('size', String(size))
       .set('sort', 'id,desc');
 
-    return this.http.post<CategoryPageResponse>(`${this.apiUrl}/search`, data, { params });
+    return this.http
+      .post<ApiResponse<CategoryPageResponse>>(`${this.apiUrl}/search`, data, { params })
+      .pipe(map((res) => res.data));
   }
 
   submit(id: number): Observable<Category> {
-    return this.http.post<Category>(`${this.apiUrl}/${id}/submit`, {});
+    return this.http
+      .post<ApiResponse<Category>>(`${this.apiUrl}/${id}/submit`, {})
+      .pipe(map((res) => res.data));
   }
 
-  createAndSubmit(id: number): Observable<Category>{
-    return this.http.post<Category>(`${this.apiUrl}/${id}/submit-create`, {});
+  createAndSubmit(data: Category): Observable<Category> {
+    return this.http
+      .post<ApiResponse<Category>>(`${this.apiUrl}/submit-create`, data)
+      .pipe(map((res) => res.data));
   }
 
   approve(id: number): Observable<Category> {
-    return this.http.post<Category>(`${this.apiUrl}/${id}/approve`, {});
+    return this.http
+      .post<ApiResponse<Category>>(`${this.apiUrl}/${id}/approve`, {})
+      .pipe(map((res) => res.data));
   }
 
   reject(id: number, data: { reason: string }): Observable<Category> {
-    return this.http.post<Category>(`${this.apiUrl}/${id}/reject`, data);
+    return this.http
+      .post<ApiResponse<Category>>(`${this.apiUrl}/${id}/reject`, data)
+      .pipe(map((res) => res.data));
   }
 
   cancelApprove(id: number): Observable<Category> {
-    return this.http.post<Category>(`${this.apiUrl}/${id}/cancel-approve`, {});
+    return this.http
+      .post<ApiResponse<Category>>(`${this.apiUrl}/${id}/cancel-approve`, {})
+      .pipe(map((res) => res.data));
   }
 }

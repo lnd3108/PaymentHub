@@ -1,11 +1,10 @@
-package com.example.demo.common.response;
+package com.example.demo.common.paging;
 
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 
-import java.lang.annotation.Native;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
