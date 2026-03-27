@@ -1,5 +1,7 @@
 package com.example.demo.repository;
 
+import com.example.demo.common.exception.BusinessException;
+import com.example.demo.common.exception.ErrorCode;
 import com.example.demo.common.paging.PageResponse;
 import com.example.demo.dto.request.GroupCategoryCreateReq;
 import com.example.demo.dto.request.GroupCategorySearchReq;
@@ -8,6 +10,7 @@ import com.example.demo.entity.GroupCategory;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.ParameterMode;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.PersistenceException;
 import jakarta.persistence.StoredProcedureQuery;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,155 +27,216 @@ public class GroupCategoryProcedureRepo {
     private EntityManager em;
 
     public Long create(GroupCategoryCreateReq req){
-        StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_CREATE");
+        try {
+            StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_CREATE");
 
-        sp.registerStoredProcedureParameter("P_PARAM_NAME", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_PARAM_VALUE", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_PARAM_TYPE", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_DESCRIPTION", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_COMPONENT_CODE", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_STATUS", Integer.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_IS_ACTIVE", Integer.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_IS_DISPLAY", Integer.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_EFFECTIVE_DATE", Date.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_END_EFFECTIVE_DATE", Date.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_ID", Long.class, ParameterMode.OUT);
+            sp.registerStoredProcedureParameter("P_PARAM_NAME", String.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_PARAM_VALUE", String.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_PARAM_TYPE", String.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_DESCRIPTION", String.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_COMPONENT_CODE", String.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_STATUS", Integer.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_IS_ACTIVE", Integer.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_IS_DISPLAY", Integer.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_EFFECTIVE_DATE", Date.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_END_EFFECTIVE_DATE", Date.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_ID", Long.class, ParameterMode.OUT);
 
-        sp.setParameter("P_PARAM_NAME", req.paramName());
-        sp.setParameter("P_PARAM_VALUE", req.paramValue());
-        sp.setParameter("P_PARAM_TYPE", req.paramType());
-        sp.setParameter("P_DESCRIPTION", req.description());
-        sp.setParameter("P_COMPONENT_CODE", req.componentCode());
-        sp.setParameter("P_STATUS", req.status());
-        sp.setParameter("P_IS_ACTIVE", req.isActive());
-        sp.setParameter("P_IS_DISPLAY", req.isDisplay());
-        sp.setParameter("P_EFFECTIVE_DATE", req.effectiveDate() == null ? null : Date.valueOf(req.effectiveDate()));
-        sp.setParameter("P_END_EFFECTIVE_DATE", req.endEffectiveDate() == null ? null : Date.valueOf(req.endEffectiveDate()));
+            sp.setParameter("P_PARAM_NAME", req.paramName());
+            sp.setParameter("P_PARAM_VALUE", req.paramValue());
+            sp.setParameter("P_PARAM_TYPE", req.paramType());
+            sp.setParameter("P_DESCRIPTION", req.description());
+            sp.setParameter("P_COMPONENT_CODE", req.componentCode());
+            sp.setParameter("P_STATUS", req.status());
+            sp.setParameter("P_IS_ACTIVE", req.isActive());
+            sp.setParameter("P_IS_DISPLAY", req.isDisplay());
+            sp.setParameter("P_EFFECTIVE_DATE", req.effectiveDate() == null ? null : Date.valueOf(req.effectiveDate()));
+            sp.setParameter("P_END_EFFECTIVE_DATE", req.endEffectiveDate() == null ? null : Date.valueOf(req.endEffectiveDate()));
 
-        sp.execute();
+            sp.execute();
 
-        Object outId = sp.getOutputParameterValue("P_ID");
-        return outId == null ? null : ((Number) outId).longValue();
+            Object outId = sp.getOutputParameterValue("P_ID");
+            return outId == null ? null : ((Number) outId).longValue();
+        } catch (Exception e) {
+            throw mapProcedureException(e, ErrorCode.GC_CREATE_FAILED);
+        }
     }
 
     @SuppressWarnings("unchecked")
     public PageResponse<GroupCategory> getAll(int page, int size) {
-        int safePage = Math.max(page, 0);
-        int safeSize = size <= 0 ? 10 : Math.min(size, 100);
+        try {
+            int safePage = Math.max(page, 0);
+            int safeSize = size <= 0 ? 10 : Math.min(size, 100);
 
-        StoredProcedureQuery sp= em.createStoredProcedureQuery("LND_PRC_GC_GET_ALL_PAGE");
+            StoredProcedureQuery sp= em.createStoredProcedureQuery("LND_PRC_GC_GET_ALL_PAGE");
 
-        sp.registerStoredProcedureParameter("P_PAGE", Integer.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_SIZE", Integer.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_TOTAL", Long.class, ParameterMode.OUT);
-        sp.registerStoredProcedureParameter("P_CURSOR", void.class, ParameterMode.REF_CURSOR);
+            sp.registerStoredProcedureParameter("P_PAGE", Integer.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_SIZE", Integer.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_TOTAL", Long.class, ParameterMode.OUT);
+            sp.registerStoredProcedureParameter("P_CURSOR", void.class, ParameterMode.REF_CURSOR);
 
-        sp.setParameter("P_PAGE", safePage);
-        sp.setParameter("P_SIZE", safeSize);
+            sp.setParameter("P_PAGE", safePage);
+            sp.setParameter("P_SIZE", safeSize);
 
-        List<Object[]> rows = sp.getResultList();
-        List<GroupCategory> result = new ArrayList<>();
-        for(Object[] row : rows){
-            result.add(mapRow(row));
+            sp.execute();
+
+            List<Object[]> rows = sp.getResultList();
+            List<GroupCategory> result = new ArrayList<>();
+            for(Object[] row : rows){
+                result.add(mapRow(row));
+            }
+
+            long total = ((Number) sp.getOutputParameterValue("P_TOTAL")).longValue();
+
+            return PageResponse.fromNative(result, safePage, safeSize, total, "effectiveDate", "desc", item -> item);
+        } catch (Exception e) {
+            throw mapProcedureException(e, ErrorCode.GC_GET_ALL_FAILED);
         }
-
-        long total = ((Number) sp.getOutputParameterValue("P_TOTAL")).longValue();
-
-        return PageResponse.fromNative(result, safePage, safeSize, total, "effectiveDate", "desc", item -> item);
     }
 
     @SuppressWarnings("unchecked")
     public GroupCategory getById(Long id){
-        StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_GET_BY_ID");
+        try {
+            StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_GET_BY_ID");
 
-        sp.registerStoredProcedureParameter("P_ID", Long.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_CURSOR", void.class, ParameterMode.REF_CURSOR);
+            sp.registerStoredProcedureParameter("P_ID", Long.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_CURSOR", void.class, ParameterMode.REF_CURSOR);
 
-        sp.setParameter("P_ID", id);
-        sp.execute();
+            sp.setParameter("P_ID", id);
+            sp.execute();
 
-        List<Object[]> rows = sp.getResultList();
-        if(rows == null || rows.isEmpty()){
-            throw new RuntimeException("Không tìm thấy bản ghi với id = " + id);
+            List<Object[]> rows = sp.getResultList();
+            if(rows == null || rows.isEmpty()){
+                throw new BusinessException(ErrorCode.GC_NOT_FOUND);
+            }
+
+            return mapRow(rows.get(0));
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            throw mapProcedureException(e, ErrorCode.INTERNAL_ERROR);
         }
-
-        return mapRow(rows.get(0));
     }
 
     public Long update (Long id, GroupCategoryUpdateReq req){
-        StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_UPDATE");
+        try {
+            StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_UPDATE");
 
-        sp.registerStoredProcedureParameter("P_ID", Long.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_PARAM_NAME", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_PARAM_VALUE", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_PARAM_TYPE", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_DESCRIPTION", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_COMPONENT_CODE", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_STATUS", Integer.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_IS_ACTIVE", Integer.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_IS_DISPLAY", Integer.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_EFFECTIVE_DATE", Date.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_END_EFFECTIVE_DATE", Date.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_ID", Long.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_PARAM_NAME", String.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_PARAM_VALUE", String.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_PARAM_TYPE", String.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_DESCRIPTION", String.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_COMPONENT_CODE", String.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_STATUS", Integer.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_IS_ACTIVE", Integer.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_IS_DISPLAY", Integer.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_EFFECTIVE_DATE", Date.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_END_EFFECTIVE_DATE", Date.class, ParameterMode.IN);
 
-        sp.setParameter("P_ID", id);
-        sp.setParameter("P_PARAM_NAME", req.paramName());
-        sp.setParameter("P_PARAM_VALUE", req.paramValue());
-        sp.setParameter("P_PARAM_TYPE", req.paramType());
-        sp.setParameter("P_DESCRIPTION", req.description());
-        sp.setParameter("P_COMPONENT_CODE", req.componentCode());
-        sp.setParameter("P_STATUS", req.status());
-        sp.setParameter("P_IS_ACTIVE", req.isActive());
-        sp.setParameter("P_IS_DISPLAY", req.isDisplay());
-        sp.setParameter("P_EFFECTIVE_DATE", req.effectiveDate() == null ? null : Date.valueOf(req.effectiveDate()));
-        sp.setParameter("P_END_EFFECTIVE_DATE", req.endEffectiveDate() == null ? null : Date.valueOf(req.endEffectiveDate()));
+            sp.setParameter("P_ID", id);
+            sp.setParameter("P_PARAM_NAME", req.paramName());
+            sp.setParameter("P_PARAM_VALUE", req.paramValue());
+            sp.setParameter("P_PARAM_TYPE", req.paramType());
+            sp.setParameter("P_DESCRIPTION", req.description());
+            sp.setParameter("P_COMPONENT_CODE", req.componentCode());
+            sp.setParameter("P_STATUS", req.status());
+            sp.setParameter("P_IS_ACTIVE", req.isActive());
+            sp.setParameter("P_IS_DISPLAY", req.isDisplay());
+            sp.setParameter("P_EFFECTIVE_DATE", req.effectiveDate() == null ? null : Date.valueOf(req.effectiveDate()));
+            sp.setParameter("P_END_EFFECTIVE_DATE", req.endEffectiveDate() == null ? null : Date.valueOf(req.endEffectiveDate()));
 
-        sp.execute();
-        return id;
+            sp.execute();
+            return id;
+        } catch (Exception e) {
+            throw mapProcedureException(e, ErrorCode.GC_UPDATE_FAILED);
+        }
     }
 
     public void delete(Long id){
-        StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_DELETE");
+        try {
+            StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_DELETE");
 
-        sp.registerStoredProcedureParameter("P_ID", Long.class, ParameterMode.IN);
-        sp.setParameter("P_ID", id);
-        sp.execute();
+            sp.registerStoredProcedureParameter("P_ID", Long.class, ParameterMode.IN);
+            sp.setParameter("P_ID", id);
+            sp.execute();
+        } catch (Exception e) {
+            throw mapProcedureException(e, ErrorCode.GC_DELETE_FAILED);
+        }
     }
 
     public PageResponse<GroupCategory> search(GroupCategorySearchReq req) {
-        int safePage = req.page() == null || req.page() < 0 ? 0 : req.page();
-        int safeSize = req.size() == null || req.size() <= 0 ? 10 : Math.min(req.size(), 100);
+        try {
+            int safePage = req.page() == null || req.page() < 0 ? 0 : req.page();
+            int safeSize = req.size() == null || req.size() <= 0 ? 10 : Math.min(req.size(), 100);
 
-        StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_SEARCH_PAGE_2");
+            StoredProcedureQuery sp = em.createStoredProcedureQuery("LND_PRC_GC_SEARCH_PAGE");
 
-        sp.registerStoredProcedureParameter("P_PARAM_NAME", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_PARAM_VALUE", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_PARAM_TYPE", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_STATUS", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_IS_ACTIVE", String.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_PAGE", Integer.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_SIZE", Integer.class, ParameterMode.IN);
-        sp.registerStoredProcedureParameter("P_TOTAL", Long.class, ParameterMode.OUT);
-        sp.registerStoredProcedureParameter("P_CURSOR", void.class, ParameterMode.REF_CURSOR);
+            sp.registerStoredProcedureParameter("P_PARAM_NAME", String.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_PARAM_VALUE", String.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_PARAM_TYPE", String.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_STATUS", String.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_IS_ACTIVE", String.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_PAGE", Integer.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_SIZE", Integer.class, ParameterMode.IN);
+            sp.registerStoredProcedureParameter("P_TOTAL", Long.class, ParameterMode.OUT);
+            sp.registerStoredProcedureParameter("P_CURSOR", void.class, ParameterMode.REF_CURSOR);
 
-        sp.setParameter("P_PARAM_NAME", emptyToNull(req.paramName()));
-        sp.setParameter("P_PARAM_VALUE", emptyToNull(req.paramValue()));
-        sp.setParameter("P_PARAM_TYPE", emptyToNull(req.paramType()));
-        sp.setParameter("P_STATUS", joinIntegerList(req.status()));
-        sp.setParameter("P_IS_ACTIVE", joinIntegerList(req.isActive()));
-        sp.setParameter("P_PAGE", safePage);
-        sp.setParameter("P_SIZE", safeSize);
+            sp.setParameter("P_PARAM_NAME", emptyToNull(req.paramName()));
+            sp.setParameter("P_PARAM_VALUE", emptyToNull(req.paramValue()));
+            sp.setParameter("P_PARAM_TYPE", emptyToNull(req.paramType()));
+            sp.setParameter("P_STATUS", joinIntegerList(req.status()));
+            sp.setParameter("P_IS_ACTIVE", joinIntegerList(req.isActive()));
+            sp.setParameter("P_PAGE", safePage);
+            sp.setParameter("P_SIZE", safeSize);
 
-        sp.execute();
+            sp.execute();
 
-        List<Object[]> rows = sp.getResultList();
-        List<GroupCategory> result = new ArrayList<>();
-        for (Object[] row : rows) {
-            result.add(mapRow(row));
+            List<Object[]> rows = sp.getResultList();
+            List<GroupCategory> result = new ArrayList<>();
+            for (Object[] row : rows) {
+                result.add(mapRow(row));
+            }
+
+            long total = ((Number) sp.getOutputParameterValue("P_TOTAL")).longValue();
+
+            return PageResponse.fromNative(result, safePage, safeSize, total, "effectiveDate", "desc", item -> item);
+        } catch (Exception e) {
+            throw mapProcedureException(e, ErrorCode.GC_SEARCH_FAILED);
+        }
+    }
+
+    private BusinessException mapProcedureException(Exception e, ErrorCode defaultCode) {
+        String message = getDeepMessage(e);
+
+        if (message.contains("GC_DUPLICATE")) {
+            return new BusinessException(ErrorCode.GC_DUPLICATE);
+        }
+        if (message.contains("GC_NOT_FOUND")) {
+            return new BusinessException(ErrorCode.GC_NOT_FOUND);
+        }
+        if (message.contains("GC_PENDING_CANNOT_DELETE")) {
+            return new BusinessException(ErrorCode.GC_PENDING_CANNOT_DELETE);
+        }
+        if (message.contains("GC_APPROVED_CANNOT_DELETE")) {
+            return new BusinessException(ErrorCode.GC_APPROVED_CANNOT_DELETE);
+        }
+        if (message.contains("GC_INVALID_DATE_RANGE")) {
+            return new BusinessException(ErrorCode.GC_INVALID_DATE_RANGE);
         }
 
-        long total = ((Number) sp.getOutputParameterValue("P_TOTAL")).longValue();
+        return new BusinessException(defaultCode);
+    }
 
-        return PageResponse.fromNative(result, safePage, safeSize, total, "effectiveDate", "desc", item -> item);
+    private String getDeepMessage(Throwable e) {
+        StringBuilder sb = new StringBuilder();
+        while (e != null) {
+            if (e.getMessage() != null) {
+                sb.append(e.getMessage()).append(" | ");
+            }
+            e = e.getCause();
+        }
+        return sb.toString();
     }
 
     private GroupCategory mapRow(Object[] row){
