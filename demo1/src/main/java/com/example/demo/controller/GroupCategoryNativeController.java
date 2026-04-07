@@ -1,23 +1,22 @@
 package com.example.demo.controller;
 
 import com.example.demo.common.paging.PageResponse;
+import com.example.demo.dto.request.GroupCategoryActionReq;
 import com.example.demo.dto.request.GroupCategoryCreateReq;
 import com.example.demo.dto.request.GroupCategorySearchReq;
 import com.example.demo.dto.request.GroupCategoryUpdateReq;
 import com.example.demo.entity.GroupCategory;
 import com.example.demo.service.GroupCategoryNativeService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin("http://localhost:4200/")
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/native/categories")
 public class GroupCategoryNativeController {
 
     private final GroupCategoryNativeService service;
-
-    public GroupCategoryNativeController(GroupCategoryNativeService service) {
-        this.service = service;
-    }
 
     @PostMapping
     public Long create(@RequestBody GroupCategoryCreateReq req) {
@@ -55,5 +54,20 @@ public class GroupCategoryNativeController {
             @RequestParam(defaultValue = "10") int size
     ) {
         return service.search(req, page, size);
+    }
+
+    @PostMapping("/{id}/submit")
+    public Long submit(@PathVariable Long id, @RequestBody GroupCategoryActionReq req) {
+        return service.submit(id, req);
+    }
+
+    @PostMapping("/{id}/approve")
+    public Long approve(@PathVariable Long id, @RequestBody GroupCategoryActionReq req) {
+        return service.approve(id, req);
+    }
+
+    @PostMapping("/{id}/reject")
+    public Long reject(@PathVariable Long id, @RequestBody GroupCategoryActionReq req) {
+        return service.reject(id, req);
     }
 }

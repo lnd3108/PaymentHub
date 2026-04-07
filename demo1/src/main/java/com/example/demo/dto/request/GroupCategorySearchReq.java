@@ -9,6 +9,8 @@ public record GroupCategorySearchReq(
         List<Integer> status,
         List<Integer> isActive,
         Integer page,
-        Integer size
+        Integer size,
+        String sortBy,
+        String sortDir
 ){
 }

@@ -14,7 +14,8 @@ import com.example.demo.mapper.GroupCategoryMapper;
 import com.example.demo.repository.GroupCategoryRepository;
 import com.example.demo.service.helper.GroupCategoryNewDataHelper;
 import com.example.demo.service.validator.GroupCategoryValidator;
-import com.example.demo.specification.GroupCategorySpecification;
+import com.example.demo.repository.specification.GroupCategorySpecification;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ import java.util.Objects;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class GroupCategoryService {
 
     private final GroupCategoryRepository repository;
@@ -31,28 +33,27 @@ public class GroupCategoryService {
     private final GroupCategoryMapper mapper;
     private final GroupCategoryNewDataHelper newDataHelper;
 
-    public GroupCategoryService(GroupCategoryRepository repository,
-                                GroupCategoryValidator validator,
-                                GroupCategoryMapper mapper,
-                                GroupCategoryNewDataHelper newDataHelper) {
-        this.repository = repository;
-        this.validator = validator;
-        this.mapper = mapper;
-        this.newDataHelper = newDataHelper;
-    }
-
     public GroupCategory create(GroupCategoryUpsertReq req) {
+        //kiểm trả các trường gửi lên có trống hay không
         validator.validateRequired(req);
+        //chuẩn hóa các field khóa để tránh trùng do khác biệt khoảng trắng
         validator.validateDuplicateForUpsert(req, null);
 
+        //tạo entity mới để copy bản ghi từ nguồn
         GroupCategory entity = new GroupCategory();
+        //gắn trường đã được chuẩn hóa vào entity
         mapper.applyBaseFields(entity, req);
 
+        //Set status = 1 - Tạo Mới
         entity.setStatus(GroupCategoryConstant.STATUS_DRAFT);
+        //set is active về trạng thái đang hoạt động
         entity.setIsActive(req.isActive() == null ? GroupCategoryConstant.ACTIVE_DEFAULT : req.isActive());
+        //để display về trạng thái chưa duyệt có thể xóa
         entity.setIsDisplay(req.isDisplay() == null ? GroupCategoryConstant.DISPLAY_HIDDEN : req.isDisplay());
+        //set newData = null
         entity.setNewData(null);
 
+        //lưu
         return repository.save(entity);
     }
 
@@ -72,20 +73,28 @@ public class GroupCategoryService {
     }
 
     public GroupCategory update(Long id, GroupCategoryUpsertReq req) {
+        //kiểm tra các trường có trống hay không
         validator.validateRequired(req);
 
+        //kiểm tra với id đấy thfi có tồn tại bản ghi hay không nếu không thì ném lỗi ra ngoài
         GroupCategory current = getRequired(id);
 
+        //kiểm tra trạng thái status và display
         if (isPublished(current)) {
+            //Tạo biến chưas bản ghi xem trước, tránh sửa trực tiếp object gốc
             GroupCategory preview = mapper.buildPreviewEntity(current, req);
+            //check trùng sau khi map
             validator.validateDuplicateForEntity(preview, current.getId());
 
+            //Tạo json object rỗng, chỉ chứa các field thay đổi
             String patchJson = newDataHelper.buildPatchJson(current, req);
+            //kiểm tra nếu chuỗi null, rỗng hoặc chỉ có khoảng trắng thì trả ra business logic
             if (!newDataHelper.hasMeaningfulNewData(patchJson)) {
                 throw new BusinessException(ErrorCode.GC_NO_CHANGES);
             }
-
+            //nếu dữ liệu mới sau khi check thì map vào bảng
             current.setNewData(patchJson);
+            //lưu
             return repository.save(current);
         }
 

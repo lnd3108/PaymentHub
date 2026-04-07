@@ -14,3 +14,7 @@ public record GroupCategoryCreateReq(
         String newData,
         LocalDate effectiveDate,
         LocalDate endEffectiveDate){}
+
+
+
+

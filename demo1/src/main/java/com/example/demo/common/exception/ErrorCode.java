@@ -5,14 +5,12 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 public enum ErrorCode {
-    // Common
     INVALID_REQUEST("CM_400", HttpStatus.BAD_REQUEST, "Dữ liệu đầu vào không hợp lệ"),
     NOT_FOUND("CM_404", HttpStatus.NOT_FOUND, "Không tìm thấy dữ liệu"),
     CONFLICT("CM_409", HttpStatus.CONFLICT, "Dữ liệu đã tồn tại"),
     INVALID_STATE("CM_422", HttpStatus.UNPROCESSABLE_ENTITY, "Trạng thái dữ liệu không hợp lệ"),
     INTERNAL_ERROR("CM_500", HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi hệ thống"),
 
-    // Group Category
     GC_INVALID_ID("GC_400_01", HttpStatus.BAD_REQUEST, "Id không hợp lệ"),
     GC_INVALID_PAGE("GC_400_02", HttpStatus.BAD_REQUEST, "page phải >= 0 và size phải trong khoảng 1-100"),
     GC_PARAM_NAME_REQUIRED("GC_400_03", HttpStatus.BAD_REQUEST, "paramName không được để trống"),
@@ -38,6 +36,7 @@ public enum ErrorCode {
     GC_DELETE_FAILED("GC_500_05", HttpStatus.INTERNAL_SERVER_ERROR, "Xóa nhóm danh mục thất bại"),
     GC_SEARCH_FAILED("GC_500_06", HttpStatus.INTERNAL_SERVER_ERROR, "Tìm kiếm nhóm danh mục thất bại"),
     GC_GET_ALL_FAILED("GC_500_07", HttpStatus.INTERNAL_SERVER_ERROR, "Lấy danh sách nhóm danh mục thất bại");
+
 
     private final String code;
     private final HttpStatus status;

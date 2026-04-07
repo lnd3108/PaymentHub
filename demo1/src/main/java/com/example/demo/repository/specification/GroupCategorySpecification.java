@@ -1,4 +1,4 @@
-package com.example.demo.specification;
+package com.example.demo.repository.specification;
 
 import com.example.demo.dto.request.GroupCategorySearchReq;
 import com.example.demo.entity.GroupCategory;
@@ -7,11 +7,16 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.ArrayList;
 import java.util.List;
 import jakarta.persistence.criteria.Predicate;
-
 public class GroupCategorySpecification {
 
     public static Specification<GroupCategory> search(GroupCategorySearchReq req) {
-        return (root, query, cb) -> {
+        //root : đại diện cho chính bảng products trong Database. Dùng root để trỏ tới các cột vd: root.get("price" tương đương với cột price)
+        //query(criteria querry): đại diện cho tổng thể câu lệnh (SELECT, FROM, WHERE, GROUP BY). ít đụng trừ khi dùng viết SUB-Querry
+        //criteriaBuilder(CriteriaBuilder): Đây là "Người thợ xây" tạo ra các phép toán trong mệnh đề Where
+        //Bất cứ khi nào cần các toán tử như LỊKE, =, <, >, and, or đều phải gọi criteriaBuilder
+        return (root, query,    cb) -> {
+            //Predicate khởi tạo danh sách các điều kiện
+            //đại diện cho 1 điều kiên đơn lẻ
             List<Predicate> ps = new ArrayList<>();
 
             if (hasText(req.paramType())) {

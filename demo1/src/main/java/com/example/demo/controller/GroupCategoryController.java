@@ -7,25 +7,18 @@ import com.example.demo.dto.response.GroupCategoryResponse;
 import com.example.demo.dto.request.GroupCategorySearchReq;
 import com.example.demo.dto.request.GroupCategoryUpsertReq;
 import com.example.demo.dto.request.GroupCategoryRejectReq;
-import com.example.demo.entity.GroupCategory;
 import com.example.demo.service.GroupCategoryService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/jpa/categories")
-public class GroupCategoryControllers {
+public class GroupCategoryController {
 
     private final GroupCategoryService service;
-
-    public GroupCategoryControllers(GroupCategoryService service) {
-        this.service = service;
-    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)

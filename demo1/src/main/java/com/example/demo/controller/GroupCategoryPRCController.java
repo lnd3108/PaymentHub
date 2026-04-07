@@ -2,9 +2,11 @@ package com.example.demo.controller;
 
 import com.example.demo.common.response.ApiResponse;
 import com.example.demo.common.paging.PageResponse;
+import com.example.demo.dto.request.GroupCategoryActionReq;
 import com.example.demo.dto.request.GroupCategoryCreateReq;
 import com.example.demo.dto.request.GroupCategorySearchReq;
 import com.example.demo.dto.request.GroupCategoryUpdateReq;
+import com.example.demo.dto.response.GroupCategoryResponse;
 import com.example.demo.entity.GroupCategory;
 import com.example.demo.service.GroupCategoryPrcService;
 import org.springframework.web.bind.annotation.*;
@@ -54,5 +56,18 @@ public class GroupCategoryPRCController {
         return ApiResponse.success(service.search(req));
     }
 
+    @PostMapping("/{id}/submit")
+    public ApiResponse<Long> submit(@PathVariable Long id, @RequestBody GroupCategoryActionReq req){
+        return ApiResponse.success("Submit success", service.submit(id, req));
+    }
 
+    @PostMapping("/{id}/approve")
+    public ApiResponse<Long> approve(@PathVariable Long id, @RequestBody GroupCategoryActionReq req){
+        return ApiResponse.success("Approve success", service.approve(id, req));
+    }
+
+    @PostMapping("/{id}/reject")
+    public ApiResponse<Long> reject(@PathVariable Long id, @RequestBody GroupCategoryActionReq req){
+        return ApiResponse.success("Reject success", service.reject(id, req));
+    }
 }

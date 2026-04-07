@@ -3,6 +3,7 @@ package com.example.demo.service;
 import com.example.demo.common.exception.BusinessException;
 import com.example.demo.common.exception.ErrorCode;
 import com.example.demo.common.paging.PageResponse;
+import com.example.demo.dto.request.GroupCategoryActionReq;
 import com.example.demo.dto.request.GroupCategoryCreateReq;
 import com.example.demo.dto.request.GroupCategorySearchReq;
 import com.example.demo.dto.request.GroupCategoryUpdateReq;
@@ -44,6 +45,24 @@ public class GroupCategoryPrcService {
         repository.delete(id);
     }
 
+    public Long submit(Long id, GroupCategoryActionReq req){
+        validateId(id);
+        validateActionRequest(req);
+        return repository.action(id, "SUBMIT", req);
+    }
+
+    public Long approve(Long id, GroupCategoryActionReq req){
+        validateId(id);
+        validateActionRequest(req);
+        return repository.action(id, "APPROVE", req);
+    }
+
+    public Long reject(Long id, GroupCategoryActionReq req){
+        validateId(id);
+        validateActionRequest(req);
+        return repository.action(id, "REJECT", req);
+    }
+
     public PageResponse<GroupCategory> search(GroupCategorySearchReq req) {
         return repository.search(req);
     }
@@ -71,6 +90,15 @@ public class GroupCategoryPrcService {
         if (req.effectiveDate() != null && req.endEffectiveDate() != null
                 && req.endEffectiveDate().isBefore(req.effectiveDate())) {
             throw new BusinessException(ErrorCode.GC_INVALID_DATE_RANGE);
+        }
+    }
+
+    private void validateActionRequest(GroupCategoryActionReq req) {
+        if (req == null) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST);
+        }
+        if (req.actor() == null || req.actor().trim().isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, "actor không được để trống");
         }
     }
 }

@@ -8,12 +8,6 @@ import java.util.Optional;
 
 public interface GroupCategoryRepository extends JpaRepository<GroupCategory, Long>, JpaSpecificationExecutor<GroupCategory> {
 
-    Optional<GroupCategory> findByParamNameAndParamValueAndParamType(
-            String paramName,
-            String paramValue,
-            String paramType
-    );
-
     boolean existsByParamNameAndParamValueAndParamType(
             String paramName,
             String paramValue,
