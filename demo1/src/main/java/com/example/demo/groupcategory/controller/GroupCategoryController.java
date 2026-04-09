@@ -36,7 +36,7 @@ public class GroupCategoryController {
         return ApiResponse.success("Create and submit success", GroupCategoryResponse.from(service.createAndSubmit(req)));
     }
 
-    //@PreAuthorize("hasAuthority('GC_LIST') or hasAuthority('GC_ADMIN')")
+    @PreAuthorize("hasAuthority('GC_LIST') or hasAuthority('GC_ADMIN')")
     @GetMapping
     public ApiResponse<PageResponse<GroupCategoryResponse>> getAll(PagingRequest pagingRequest) {
         return ApiResponse.success(service.getCategory(pagingRequest));

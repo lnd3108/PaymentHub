@@ -23,6 +23,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -47,6 +48,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (!StringUtils.hasText(jwt)) {
                 filterChain.doFilter(request, response);
+                return;
+            }
+
+            if (tokenBlacklistService.isBlacklisted(jwt)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("""
+                    {
+                      "code": "AU_401",
+                      "message": "Token đã bị logout",
+                      "success": false
+                    }
+                    """);
                 return;
             }
 

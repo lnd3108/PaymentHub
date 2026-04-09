@@ -2,18 +2,16 @@ package com.example.demo.security.user;
 
 import com.example.demo.user.entity.Acount;
 import com.example.demo.user.entity.AcountRole;
+import com.example.demo.user.entity.Permission;
 import com.example.demo.user.entity.RolePermission;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -53,10 +51,14 @@ public class CustomUserDetails implements UserDetails {
 
             if(acountRole.getRole().getRolePermissions() != null){
                 for (RolePermission rp : acountRole.getRole().getRolePermissions()){
-                    if(rp.getPermission().getName() != null
-                        && rp.getPermission().getName().isBlank()
-                        && !rp.getPermission().getName().isBlank()){
-                        result.add(new SimpleGrantedAuthority(rp.getPermission().getName()));
+                    Permission permission = rp.getPermission();
+                    if(permission == null){
+                        continue;
+                    }
+
+                    String permissionName = permission.getName();
+                    if(permissionName != null && !permissionName.isBlank()){
+                        result.add(new SimpleGrantedAuthority(permissionName));
                     }
                 }
             }

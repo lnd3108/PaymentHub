@@ -9,6 +9,7 @@ import com.example.demo.auth.service.AuthService;
 import com.example.demo.common.response.ApiResponse;
 import com.example.demo.security.user.CustomUserDetails;
 import com.example.demo.user.service.AcountService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,12 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<LoginResponse> login(@Valid @RequestBody LoginRequest req){
         return ApiResponse.success(authService.login(req));
+    }
+
+    @PostMapping("/logout")
+    public ApiResponse<String> logout(HttpServletRequest request) {
+        authService.logout(request);
+        return ApiResponse.success("Logout success", "Đăng xuất thành công");
     }
 
     @GetMapping("/me")

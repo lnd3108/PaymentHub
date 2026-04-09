@@ -2,6 +2,8 @@ package com.example.demo.common.exception;
 
 import com.example.demo.common.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -45,6 +47,36 @@ public class GlobalExceptionHandler {
                         ErrorCode.INVALID_REQUEST.getStatus().value(),
                         "Validation failed",
                         errors,
+                        request.getRequestURI()
+                ));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthentication(
+            AuthenticationException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(ErrorCode.UNAUTHORIZED.getStatus())
+                .body(ErrorResponse.of(
+                        ErrorCode.UNAUTHORIZED.getCode(),
+                        ErrorCode.UNAUTHORIZED.getStatus().value(),
+                        ErrorCode.UNAUTHORIZED.getMessage(),
+                        request.getRequestURI()
+                ));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(
+            AccessDeniedException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(ErrorCode.FORBIDDEN.getStatus())
+                .body(ErrorResponse.of(
+                        ErrorCode.FORBIDDEN.getCode(),
+                        ErrorCode.FORBIDDEN.getStatus().value(),
+                        ErrorCode.FORBIDDEN.getMessage(),
                         request.getRequestURI()
                 ));
     }
