@@ -5,7 +5,7 @@ import java.util.List;
 public record LoginResponse(
         String accessToken,
         String tokenType,
-        Long expiresIn,
+        Long accessExpiresIn,
         UserInfo user
 ) {
     public record UserInfo(

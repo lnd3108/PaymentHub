@@ -328,6 +328,7 @@ export class CategoryList implements OnInit {
     });
   }
 
+  //xuất excel
   exportExcel(): void {
     if (!this.categories || this.categories.length === 0) {
       this.toastr.warning('Không có dữ liệu để xuất', 'Cảnh báo');

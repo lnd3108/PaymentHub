@@ -62,8 +62,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!-- OpenAPI metadata and /v3/api-docs without Swagger UI.
-             springdoc 2.8.16 UI auto-config is not compatible with Spring Boot 4. -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-api</artifactId>

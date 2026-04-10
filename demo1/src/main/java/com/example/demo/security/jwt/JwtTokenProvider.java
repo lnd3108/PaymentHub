@@ -19,8 +19,11 @@ public class JwtTokenProvider {
     @Value("${app.jwt.secret}")
     private String secret;
 
-    @Value("${app.jwt.expiration}")
-    private long expiration;
+    @Value("${app.jwt.access-expiration}")
+    private long accessExpiration;
+
+    @Value("${app.jwt.refresh-expiration}")
+    private long refreshExpiration;
 
     private SecretKey secretKey;
 
@@ -29,47 +32,67 @@ public class JwtTokenProvider {
         this.secretKey = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret));
     }
 
-    public String generateToken(Authentication authentication) {
+    public String generateAccessToken(Authentication authentication) {
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-
         Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + expiration);
+        Date expiryDate = new Date(now.getTime() + accessExpiration);
 
         return Jwts.builder()
                 .subject(userDetails.getUsername())
                 .claim("userId", userDetails.getId())
+                .claim("type", "access")
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(secretKey)
+                .compact();
+    }
+    public String generateRefreshToken(Authentication authentication) {
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + refreshExpiration);
+
+        return Jwts.builder()
+                .subject(userDetails.getUsername())
+                .claim("userId", userDetails.getId())
+                .claim("type", "refresh")
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(secretKey)
                 .compact();
     }
 
-    public Long getUserIdFromToken(String token) {
-        Object value = getClaims(token).get("userId");
-        if (value == null) return null;
-        if (value instanceof Integer i) return i.longValue();
-        if (value instanceof Long l) return l;
-        return Long.parseLong(value.toString());
-    }
-
-    public boolean validateToken(String token) {
-        try {
+    public boolean validateToken(String token){
+        try{
             getClaims(token);
             return true;
-        } catch (Exception ex) {
+        }catch (Exception ex){
             return false;
         }
     }
 
-    public long getExpirationInSeconds() {
-        return expiration / 1000;
+    public Long getUserIdFromToken(String token){
+        Object value = getClaims(token).get("userId");
+        if(value == null) return null;
+        if(value instanceof Integer i) return i.longValue();
+        if(value instanceof Long l) return l;
+        return Long.parseLong(value.toString());
+
     }
 
-    private Claims getClaims(String token) {
+    private Claims getClaims(String token){
         return Jwts.parser()
                 .verifyWith(secretKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
     }
+
+    public long getAccessExpirationInSeconds() {
+        return accessExpiration / 1000;
+    }
+
+    public long getRefreshExpirationInSeconds() {
+        return refreshExpiration / 1000;
+    }
+
 }

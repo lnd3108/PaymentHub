@@ -1,8 +1,10 @@
 package com.example.demo.security.jwt;
 
+import com.example.demo.auth.service.AuthService;
 import com.example.demo.security.user.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 @Slf4j
 @Component
@@ -96,7 +99,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         } catch (Exception ex) {
             SecurityContextHolder.clearContext();
             log.error("JWT filter error at uri={}: {}", request.getRequestURI(), ex.getMessage(), ex);
-
             // giữ request đi tiếp để Security xử lý 401/403 đúng chuẩn
             // nếu muốn chặn ngay thì dùng response.sendError(401, "Invalid token");
         }
@@ -104,11 +106,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
+
+
     private String resolveToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
-        return null;
+
+        Cookie[] cookies = request.getCookies();
+        if(cookies == null){
+            return null;
+        }
+
+        return Arrays.stream(cookies)
+                .filter(cookie -> AuthService.ACCESS_COOKIE.equals(cookie.getName()))
+                .map(Cookie::getValue)
+                .findFirst()
+                .orElse(null);
     }
 }
