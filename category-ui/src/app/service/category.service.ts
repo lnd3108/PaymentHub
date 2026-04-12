@@ -102,4 +102,18 @@ export class CategoryService {
       .post<ApiResponse<Category>>(`${this.apiUrl}/${id}/cancel-approve`, {})
       .pipe(map((res) => res.data));
   }
+
+  exportExcel(filters?: any) {
+    return this.http.post(`${this.apiUrl}/export`, filters || {}, {
+      responseType: 'blob',
+    });
+  }
+
+  importExcel(file: File, submitAfterImport: false){
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('submitAfterImport', String(submitAfterImport));
+
+    return this.http.post(`${this.apiUrl}/import`, formData);
+  }
 }

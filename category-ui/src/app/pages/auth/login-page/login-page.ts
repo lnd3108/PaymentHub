@@ -5,11 +5,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from '../../../service/auth.service';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-login-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
 })
@@ -41,14 +42,14 @@ export class LoginPage {
       .pipe(finalize(() => (this.isSubmitting = false)))
       .subscribe({
         next: () => {
-          this.toastr.success('Dang nhap thanh cong', 'Thanh cong');
+          this.toastr.success('Đăng nhập thành công', 'Thành công');
           const redirectTo = this.route.snapshot.queryParamMap.get('redirectTo');
           const safeRedirect = redirectTo?.startsWith('/') ? redirectTo : '/categories';
           void this.router.navigateByUrl(safeRedirect);
         },
         error: (error) => {
-          const message = error?.error?.message || 'Dang nhap that bai, vui long thu lai';
-          this.toastr.error(message, 'Loi');
+          const message = error?.error?.message || 'Đăng nhập thất bại, vui lòng thử lại!';
+          this.toastr.error(message, 'Lỗi đăng nhập thất bại');
         },
       });
   }

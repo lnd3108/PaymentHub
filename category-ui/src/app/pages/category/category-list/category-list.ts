@@ -330,61 +330,48 @@ export class CategoryList implements OnInit {
 
   //xuất excel
   exportExcel(): void {
-    if (!this.categories || this.categories.length === 0) {
-      this.toastr.warning('Không có dữ liệu để xuất', 'Cảnh báo');
+    this.categoryService.exportExcel(this.currentFilters).subscribe({
+      next: (blob: Blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+
+        const fileName = `category_export_${new Date().getTime()}.xlsx`;
+        link.setAttribute('download', fileName);
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      },
+      error: () => {
+        this.toastr.error('Xuất Excel thất bại', 'Lỗi');
+      },
+    });
+  }
+
+  selectedFile: File | null = null;
+
+  onFileChange(event: Event) {
+    const input = event.target as HTMLInputElement;
+    this.selectedFile = input.files?.[0] ?? null;
+  }
+
+  importExcel() {
+    if (!this.selectedFile) {
+      this.toastr.warning('Chọn file trước');
       return;
     }
 
-    const headers = [
-      'STT',
-      'Tên thành phần',
-      'Giá trị thành phần',
-      'Danh mục theo nhóm',
-      'Mô tả',
-      'Cấu phần xử lý',
-      'Ngày hiệu lực',
-      'Ngày hết hiệu lực',
-      'Trạng thái',
-      'Trạng thái hoạt động',
-    ];
-
-    const rows = this.categories.map((item, index) => [
-      index + 1,
-      item.paramName ?? '',
-      item.paramValue ?? '',
-      item.paramType ?? '',
-      item.description ?? '',
-      item.componentCode ?? '',
-      item.effectiveDate ?? '',
-      item.endEffectiveDate ?? '',
-      this.getStatusLabel(item.status ?? 0),
-      item.isActive === 1 ? 'Hoạt động' : 'Không hoạt động',
-    ]);
-
-    const csvContent = [headers, ...rows]
-      .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
-
-    const blob = new Blob(['\uFEFF' + csvContent], {
-      type: 'text/csv;charset=utf-8;',
+    this.categoryService.importExcel(this.selectedFile, false).subscribe({
+      next: () => {
+        this.toastr.success('Import thành công');
+        this.selectedFile = null;
+        this.loadCategories();
+      },
+      error: () => {
+        this.toastr.error('Import thất bại');
+      },
     });
-
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-
-    const today = new Date();
-    const fileName = `category_export_${today.getFullYear()}-${String(
-      today.getMonth() + 1,
-    ).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}.csv`;
-
-    link.setAttribute('download', fileName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-
-    this.toastr.success('Xuất file thành công', 'Thành công');
   }
 
   getStatusLabel(status: number): string {

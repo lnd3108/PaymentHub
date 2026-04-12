@@ -34,7 +34,9 @@
   </section>
 
   <section class="overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm">
-    <div class="flex items-center justify-between border-b border-gray-100 px-6 py-5">
+    <div
+      class="flex flex-col gap-4 border-b border-gray-100 px-6 py-5 lg:flex-row lg:items-center lg:justify-between"
+    >
       <div class="flex items-center gap-3">
         <h2 class="text-[22px] font-semibold text-[#2f3437]">Danh sách bản ghi</h2>
         <span
@@ -44,13 +46,46 @@
         </span>
       </div>
 
-      <button
-        type="button"
-        (click)="exportExcel()"
-        class="rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-      >
-        ⭳ Xuất Excel
-      </button>
+      <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+        <button
+          type="button"
+          (click)="exportExcel()"
+          class="inline-flex items-center justify-center rounded-xl border border-[#cfd8dc] bg-white px-4 py-2.5 text-sm font-semibold text-[#1f2937] transition hover:border-[#007c7a] hover:text-[#007c7a]"
+        >
+          <span class="mr-2 text-base leading-none">⭳</span>
+          Xuất Excel
+        </button>
+
+        <label
+          for="category-import-file"
+          class="flex min-w-[260px] cursor-pointer items-center justify-between gap-3 rounded-xl border border-dashed border-[#cfd8dc] bg-[#f8fbfb] px-4 py-2.5 text-sm text-[#4b5563] transition hover:border-[#007c7a] hover:bg-[#f2fbfb]"
+        >
+          <span class="inline-flex items-center gap-2 font-medium text-[#2f3437]">
+            <span class="text-base leading-none">+</span>
+            Chọn file Excel
+          </span>
+          <span class="max-w-[150px] truncate text-right text-xs text-[#6b7280]">
+            {{ selectedFile?.name || 'Chưa chọn file' }}
+          </span>
+        </label>
+
+        <input
+          id="category-import-file"
+          type="file"
+          accept=".xlsx,.xls"
+          class="hidden"
+          (change)="onFileChange($event)"
+        />
+
+        <button
+          type="button"
+          (click)="importExcel()"
+          [disabled]="!selectedFile"
+          class="inline-flex items-center justify-center rounded-xl bg-[#007c7a] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#006766] disabled:cursor-not-allowed disabled:bg-[#b9d7d6]"
+        >
+          Import Excel
+        </button>
+      </div>
     </div>
 
     <div class="px-6 py-5">

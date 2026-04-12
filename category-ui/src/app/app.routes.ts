@@ -5,11 +5,17 @@ import { CategoryFormPage } from './pages/category/category-form-page/category-f
 import { CategoryDetailPage } from './pages/category/category-detail-page/category-detail-page';
 import { authGuard, guestGuard } from './guards/auth.guard';
 import { LoginPage } from './pages/auth/login-page/login-page';
+import { RegisterPage } from './pages/auth/register-page/register-page';
 
 export const routes: Routes = [
   {
     path: 'login',
     component: LoginPage,
+    canActivate: [guestGuard],
+  },
+  {
+    path: 'register',
+    component: RegisterPage,
     canActivate: [guestGuard],
   },
   {

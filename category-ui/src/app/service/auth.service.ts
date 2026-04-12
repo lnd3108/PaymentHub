@@ -1,7 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { map, tap } from 'rxjs';
-import { LoginRequest, LoginResponse, MeResponse } from '../models/auth.models';
+import {
+  LoginRequest,
+  LoginResponse,
+  MeResponse,
+  RegisterRequest,
+  RegisterResponse,
+} from '../models/auth.models';
 import { ApiResponse } from './category.service';
 
 const AUTH_STORAGE_KEY = 'paymenthub.auth';
@@ -32,6 +38,13 @@ export class AuthService {
         map((response) => ('data' in response ? response.data : response)),
         tap((response) => this.persistSession(response)),
       );
+  }
+
+  register(payload: RegisterRequest) {
+    return this.http.post<ApiResponse<RegisterResponse> | RegisterResponse>(
+      `${this.apiBaseUrl}/register`,
+      payload,
+    );
   }
 
   logout(): void {
