@@ -12,5 +12,5 @@ public interface AcountService {
     Role saveRoleByName(String roleName, String description);
     RegisterResponse register(RegisterRequest request);
     void addRoleToAcount(String email, String roleName);
-    void createDefaultAccount(String email, String name, String rawPassword, String roleName);
+    //void createDefaultAccount(String email, String name, String rawPassword, String roleName);
 }

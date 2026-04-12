@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { FormsModule } from '@angular/forms';
-import { CategoryService } from '../../../services/category.service';
+import { CategoryService } from '../../../service/category.service';
 import { Category } from '../../../models/category.models';
 
 type DetailMode = 'detail' | 'submit' | 'approve' | 'cancel-approve';

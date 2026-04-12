@@ -44,10 +44,18 @@
           <div class="flex items-center gap-3">
             <div class="h-10 w-10 rounded-full bg-gray-300"></div>
             <div class="leading-tight">
-              <p class="text-[15px] font-semibold text-gray-800">===========</p>
-              <p class="mt-1 text-[13px] text-gray-700">Chuyên Viên</p>
+              <p class="text-[15px] font-semibold text-gray-800">{{ user()?.name || user()?.email || 'Người dùng' }}</p>
+              <p class="mt-1 text-[13px] text-gray-700">{{ user()?.roles?.[0] || 'Người dùng hệ thống' }}</p>
             </div>
           </div>
+
+          <button
+            type="button"
+            (click)="logout()"
+            class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+          >
+            Đăng xuất
+          </button>
         </div>
       </header>
 

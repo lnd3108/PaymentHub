@@ -6,13 +6,23 @@ import com.example.demo.common.response.ApiResponse;
 import com.example.demo.groupcategory.dto.request.GroupCategoryRejectReq;
 import com.example.demo.groupcategory.dto.request.GroupCategorySearchReq;
 import com.example.demo.groupcategory.dto.request.GroupCategoryUpsertReq;
+import com.example.demo.groupcategory.dto.excel.GroupCatExcelImportResult;
 import com.example.demo.groupcategory.dto.response.GroupCategoryResponse;
+import com.example.demo.groupcategory.service.GroupCategoryExcelService;
 import com.example.demo.groupcategory.service.GroupCategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
@@ -21,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 public class GroupCategoryController {
 
     private final GroupCategoryService service;
+    private final GroupCategoryExcelService groupCategoryExcelService;
 
     @PreAuthorize("hasAuthority('GC_CREATE') or hasAuthority('GC_ADMIN')")
     @PostMapping
@@ -92,5 +103,30 @@ public class GroupCategoryController {
     public ApiResponse<PageResponse<GroupCategoryResponse>> search(@RequestBody GroupCategorySearchReq req,
                                                                    PagingRequest pagingRequest) {
         return ApiResponse.success(service.search(req, pagingRequest));
+    }
+
+    @PreAuthorize("hasAuthority('GC_LIST') or hasAuthority('GC_SEARCH') or hasAuthority('GC_ADMIN')")
+    @PostMapping("/export")
+    public ResponseEntity<ByteArrayResource> exportExcel(@RequestBody(required = false) GroupCategorySearchReq req) {
+        byte[] content = groupCategoryExcelService.exportExcel(req);
+        String filename = "group-category-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + ".xlsx";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .contentLength(content.length)
+                .body(new ByteArrayResource(content));
+    }
+
+    @PreAuthorize("hasAuthority('GC_CREATE') or hasAuthority('GC_SUBMIT') or hasAuthority('GC_ADMIN')")
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<GroupCatExcelImportResult> importExcel(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(defaultValue = "false") boolean submitAfterImport
+    ) {
+        return ApiResponse.success(
+                "Import excel success",
+                groupCategoryExcelService.importExcel(file, submitAfterImport)
+        );
     }
 }

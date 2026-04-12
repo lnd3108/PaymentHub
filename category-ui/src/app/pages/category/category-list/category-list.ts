@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import Swal from 'sweetalert2';
 
-import { CategoryService } from '../../../services/category.service';
+import { CategoryService } from '../../../service/category.service';
 import { Category } from '../../../models/category.models';
 import { CategoryFiltersComponent } from '../components/category-filters/category-filters';
 import { CategoryTableComponent } from '../components/category-table/category-table';

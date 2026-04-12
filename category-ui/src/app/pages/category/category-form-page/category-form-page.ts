@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { CategoryService } from '../../../services/category.service';
+import { CategoryService } from '../../../service/category.service';
 import { Category } from '../../../models/category.models';
 
 type FormMode = 'create' | 'edit' | 'copy';

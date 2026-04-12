@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
+@Transactional // thao tác trong db chạy trong transaction
 public class ImplAcount implements AcountService {
 
     private final AcountRepository acountRepository;
@@ -28,12 +28,13 @@ public class ImplAcount implements AcountService {
     private final AcountRoleRepository acountRoleRepository;
     private final BCryptPasswordEncoder passwordEncoder;
 
-    @Override
+    @Override //ghi đè method được khai báo trong interface
     public Acount saveAcount(Acount acount) {
         if (acountRepository.existsByEmail(acount.getEmail())) {
             throw new RuntimeException("Email đã tồn tại: " + acount.getEmail());
         }
 
+        //mã hóa mật khẩu
         acount.setPassword(passwordEncoder.encode(acount.getPassword()));
         return acountRepository.save(acount);
     }
@@ -60,30 +61,38 @@ public class ImplAcount implements AcountService {
             throw new RuntimeException("Email đã tồn tại");
         }
 
+        //gán role mặc định chp usser mới đăng kí
         String roleName = (request.getRoleName() == null || request.getRoleName().isBlank())
                 ? "ROLE_USER"
                 : request.getRoleName().trim().toUpperCase();
 
+        // tìm role trong db
         Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy role: " + roleName));
 
+        //tạo object account mới
         Acount acount = new Acount();
         acount.setEmail(request.getEmail().trim());
         acount.setName(request.getName().trim());
         acount.setPassword(passwordEncoder.encode(request.getPassword()));
 
+        //lưu account trước
         Acount savedAcount = acountRepository.save(acount);
 
+        //tạo bản ghi liên kết account-role
         AcountRole acountRole = new AcountRole();
         acountRole.setId(new AcountRoleId(savedAcount.getId(), role.getId()));
         acountRole.setAcount(savedAcount);
         acountRole.setRole(role);
 
+        //lưu bảng trung gian
         acountRoleRepository.save(acountRole);
 
+        //query lại account vừa tạo
         Acount result = acountRepository.findByIdWithRolesAndPermissions(savedAcount.getId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy account sau khi tạo"));
 
+        //lấy danh sách role
         Set<String> roles = result.getAcountRoles().stream()
                 .map(ar -> ar.getRole().getName())
                 .collect(Collectors.toSet());
@@ -104,8 +113,10 @@ public class ImplAcount implements AcountService {
         Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy role: " + roleName));
 
+        //tạo khóa chinhd kép chuẩn bị cặp key cho bẳng trung gian
         AcountRoleId id = new AcountRoleId(acount.getId(), role.getId());
 
+        //check đã gán role chưua
         boolean alreadyAssigned = acount.getAcountRoles().stream()
                 .anyMatch(ar -> ar.getId().equals(id));
 
@@ -121,27 +132,27 @@ public class ImplAcount implements AcountService {
         acountRoleRepository.save(acountRole);
     }
 
-    @Override
-    public void createDefaultAccount(String email, String name, String rawPassword, String roleName) {
-        if (acountRepository.existsByEmail(email)) {
-            return;
-        }
-
-        Role role = roleRepository.findByName(roleName)
-                .orElseThrow(() -> new RuntimeException("Role chưa tồn tại: " + roleName));
-
-        Acount acount = new Acount();
-        acount.setEmail(email);
-        acount.setName(name);
-        acount.setPassword(passwordEncoder.encode(rawPassword));
-
-        Acount savedAcount = acountRepository.save(acount);
-
-        AcountRole acountRole = new AcountRole();
-        acountRole.setId(new AcountRoleId(savedAcount.getId(), role.getId()));
-        acountRole.setAcount(savedAcount);
-        acountRole.setRole(role);
-
-        acountRoleRepository.save(acountRole);
-    }
+//    @Override
+//    public void createDefaultAccount(String email, String name, String rawPassword, String roleName) {
+//        if (acountRepository.existsByEmail(email)) {
+//            return;
+//        }
+//
+//        Role role = roleRepository.findByName(roleName)
+//                .orElseThrow(() -> new RuntimeException("Role chưa tồn tại: " + roleName));
+//
+//        Acount acount = new Acount();
+//        acount.setEmail(email);
+//        acount.setName(name);
+//        acount.setPassword(passwordEncoder.encode(rawPassword));
+//
+//        Acount savedAcount = acountRepository.save(acount);
+//
+//        AcountRole acountRole = new AcountRole();
+//        acountRole.setId(new AcountRoleId(savedAcount.getId(), role.getId()));
+//        acountRole.setAcount(savedAcount);
+//        acountRole.setRole(role);
+//
+//        acountRoleRepository.save(acountRole);
+//    }
 }

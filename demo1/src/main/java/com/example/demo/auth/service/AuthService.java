@@ -33,6 +33,7 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenBlacklistService tokenBlacklistService;
 
+    //xác thực tài khoản
     public LoginResponse login(LoginRequest request, HttpServletResponse response){
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
@@ -41,6 +42,7 @@ public class AuthService {
                 )
         );
 
+        //principal là user đã đăng nhập thành công
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
         String accessToken = jwtTokenProvider.generateAccessToken(authentication);
         String refreshToken = jwtTokenProvider.generateRefreshToken(authentication);
@@ -48,12 +50,14 @@ public class AuthService {
         addTokenCookie(response, ACCESS_COOKIE, accessToken, jwtTokenProvider.getAccessExpirationInSeconds());
         addTokenCookie(response, REFRESH_COOKIE, refreshToken, jwtTokenProvider.getRefreshExpirationInSeconds());
 
+        //lấy toàn bộ authorities
         List<String> authorities = userDetails.getAuthorities()
-                .stream()
-                .map(GrantedAuthority::getAuthority)
-                .distinct()
-                .toList();
+                .stream() //đưa dũ liệu vào dây chuyền để xử lý
+                .map(GrantedAuthority::getAuthority) //lấy danh sách quyền của user
+                .distinct()//loại trùng
+                .toList(); // gom list
 
+        //tách riêng danh sách các role
         List<String> roles = authorities.stream()
                 .filter(a -> a.startsWith("ROLE_"))
                 .toList();
@@ -95,13 +99,16 @@ public class AuthService {
 
     public void logout(HttpServletRequest request, HttpServletResponse response) {
 
+        //lấy accesstoken từ request
        String accessToken = resolveAccessToken(request);
        String refreshToken = getCookieValue(request, REFRESH_COOKIE);
 
+       //kiểm tra token có rỗng không nếu có thì đưa token vào blackList
        if(StringUtils.hasText(accessToken)){
            tokenBlacklistService.blacklist(accessToken);
        }
 
+       //refresh token cũng bị vô hiệu hóa
        if(StringUtils.hasText(refreshToken)){
            tokenBlacklistService.blacklist(refreshToken);
        }
@@ -110,14 +117,19 @@ public class AuthService {
        clearCookie(response, REFRESH_COOKIE);
     }
 
+    //tìm accesstoken trong request
     private String resolveAccessToken(HttpServletRequest request) {
+        //đọc header authprization
         String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
+        //nếu header hợp lệ thì cắt token ra
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
+        //nêú không có trong header thì lấy từ cookie
         return getCookieValue(request, ACCESS_COOKIE);
     }
 
+    //tạo cookie token và gắn vào response
    private void addTokenCookie(HttpServletResponse response, String name, String value, long maxAgeSeconds){
         ResponseCookie cookie = ResponseCookie.from(name, value)
                 .httpOnly(true)
@@ -139,9 +151,11 @@ public class AuthService {
                 .maxAge(0)
                 .build();
 
+        //gửi lệnh xóa cookie về cho client
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
    }
 
+   //lấy mảng cookie mà client gửi lên
    private String getCookieValue(HttpServletRequest request, String cookieName){
        Cookie[] cookies = request.getCookies();
 
@@ -149,6 +163,7 @@ public class AuthService {
            return null;
        }
 
+       //tìm cookie đúng tên
        return Arrays.stream(cookies)
                .filter(cookie -> cookieName.equals(cookie.getName()))
                .map(Cookie::getValue)

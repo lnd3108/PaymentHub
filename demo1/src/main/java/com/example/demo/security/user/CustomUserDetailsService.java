@@ -10,10 +10,13 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
+/// triển khai userDetails của Spring Security
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final AcountRepository acountRepository;
 
+    /// lấy user từ DB
+    /// tìm acount theo email
     @Override
     public UserDetails loadUserByUsername(String email)
             throws UsernameNotFoundException{
@@ -24,6 +27,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new CustomUserDetails(acount);
     }
 
+    /// load user theo id
     public CustomUserDetails loadUserById(Long id){
         Acount acount = acountRepository.findByIdWithRolesAndPermissions(id)
                 .orElseThrow(() -> new UsernameNotFoundException("Không tìm thấy tài khoản"));
