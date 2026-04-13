@@ -8,19 +8,17 @@ import com.example.demo.groupcategory.dto.request.GroupCategorySearchReq;
 import com.example.demo.groupcategory.dto.request.GroupCategoryUpdateReq;
 import com.example.demo.groupcategory.entity.GroupCategory;
 import com.example.demo.groupcategory.service.GroupCategoryPrcService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @CrossOrigin("http://localhost:4200/")
 @RestController
 @RequestMapping("/api/prc/categories")
+@RequiredArgsConstructor
 public class GroupCategoryPRCController {
 
     private final GroupCategoryPrcService service;
-
-    public GroupCategoryPRCController(GroupCategoryPrcService service){
-        this.service = service;
-    }
 
     @PreAuthorize("hasAuthority('GC_CREATE') or hasAuthority('GC_ADMIN')")
     @PostMapping

@@ -1,6 +1,6 @@
 package com.example.demo.security.jwt;
 
-import com.example.demo.auth.service.AuthService;
+import com.example.demo.auth.service.iplm.AuthServiceIplm;
 import com.example.demo.security.user.CustomUserDetails;
 import com.example.demo.security.user.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
@@ -137,7 +137,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         return Arrays.stream(cookies)
-                .filter(cookie -> AuthService.ACCESS_COOKIE.equals(cookie.getName()))
+                .filter(cookie -> AuthServiceIplm.ACCESS_COOKIE.equals(cookie.getName()))
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElse(null);

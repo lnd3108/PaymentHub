@@ -1,6 +1,5 @@
 package com.example.demo.security.jwt;
 
-import com.example.demo.auth.service.AuthService;
 import com.example.demo.security.user.CustomUserDetails;
 import com.example.demo.security.user.CustomUserDetailsService;
 import jakarta.servlet.http.Cookie;
