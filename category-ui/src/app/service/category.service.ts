@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
+import { CategorySearchRequest } from '../domain/category/category-filter';
 import { Category } from '../models/category.models';
-import { CategorySearch } from '../models/category-search.models';
 
 export interface ApiResponse<T> {
   message?: string;
@@ -81,7 +81,7 @@ export class CategoryService {
       .pipe(map((res) => res.data));
   }
 
-  search(data: Partial<CategorySearch>, page = 0, size = 20): Observable<CategoryPageResponse> {
+  search(data: CategorySearchRequest, page = 0, size = 20): Observable<CategoryPageResponse> {
     const params = new HttpParams()
       .set('page', String(page))
       .set('size', String(size))

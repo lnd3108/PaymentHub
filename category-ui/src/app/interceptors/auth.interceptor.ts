@@ -10,7 +10,6 @@ import { Observable, tap } from 'rxjs';
 import { AuthService } from '../service/auth.service';
 
 const ACCESS_TOKEN_HEADER = 'X-Access-Token';
-const AUTH_BYPASS_PATHS = ['/auth/login', '/auth/register'];
 
 export const authInterceptor: HttpInterceptorFn = (
   req: HttpRequest<unknown>,
@@ -18,9 +17,8 @@ export const authInterceptor: HttpInterceptorFn = (
 ): Observable<HttpEvent<unknown>> => {
   const authService = inject(AuthService);
   const token = authService.getAccessToken();
-  const shouldSkipAuthorization = AUTH_BYPASS_PATHS.some((path) => req.url.includes(path));
 
-  const request = token && !shouldSkipAuthorization
+  const request = token
     ? req.clone({
         withCredentials: true,
         setHeaders: {

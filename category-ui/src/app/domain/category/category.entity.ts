@@ -1,61 +1,52 @@
 import { Category } from '../../models/category.models';
-import {
-  CategoryStatus,
-  getCategoryStatusClass,
-  getCategoryStatusLabel,
-} from './category-status';
+import { CategoryFilter } from './category-filter';
+import { CategoryStatusPolicy } from './category-status';
 
 export class CategoryEntity {
-  constructor(private readonly data: Category) {}
+  constructor(private readonly snapshot: Category) {}
 
-  static from(data: Category): CategoryEntity {
-    return new CategoryEntity(data);
+  static fromModel(category: Category): CategoryEntity {
+    return new CategoryEntity(category);
   }
 
-  toJSON(): Category {
-    return { ...this.data };
+  get id(): number | null {
+    return this.snapshot.id ?? null;
   }
 
-  get id(): number | undefined {
-    return this.data.id;
-  }
-
-  get status(): number | undefined {
-    return this.data.status;
-  }
-
-  get isActive(): number | undefined {
-    return this.data.isActive;
+  get raw(): Category {
+    return { ...this.snapshot };
   }
 
   canSubmit(): boolean {
-    return (
-      this.status === CategoryStatus.Draft ||
-      this.status === CategoryStatus.Rejected ||
-      this.status === 6 ||
-      this.status === CategoryStatus.CancelApproved
-    );
+    return CategoryStatusPolicy.canSubmit(this.snapshot.status);
   }
 
   canApprove(): boolean {
-    return this.status === CategoryStatus.PendingApproval;
+    return CategoryStatusPolicy.canApprove(this.snapshot.status);
   }
 
   canCancelApprove(): boolean {
-    return this.status === CategoryStatus.Approved;
+    return CategoryStatusPolicy.canCancelApprove(this.snapshot.status);
   }
 
-  get statusLabel(): string {
-    return getCategoryStatusLabel(this.status);
+  canDelete(): boolean {
+    return this.snapshot.isDisplay !== 2;
   }
 
-  get statusClass(): string {
-    return getCategoryStatusClass(this.status);
+  shouldRemainVisible(filter: CategoryFilter): boolean {
+    return filter.matches(this.snapshot);
   }
 
-  get parsedNewData(): Category | null {
+  withStatus(status: number): CategoryEntity {
+    return new CategoryEntity({
+      ...this.snapshot,
+      status,
+    });
+  }
+
+  parseNewData(): Category | null {
     try {
-      return this.data.newData ? (JSON.parse(this.data.newData) as Category) : null;
+      return this.snapshot.newData ? (JSON.parse(this.snapshot.newData) as Category) : null;
     } catch {
       return null;
     }

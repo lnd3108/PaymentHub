@@ -1,102 +1,89 @@
-import { CategorySearch } from '../../models/category-search.models';
 import { Category } from '../../models/category.models';
+import { CategorySearch } from '../../models/category-search.models';
 
-export interface CategoryFilterValue {
+export interface CategoryFilterForm {
   paramName: string;
   paramValue: string;
   paramType: string;
-  status: string[];
-  isActive: string[];
+  status: string;
+  isActive: string;
 }
 
-export class CategoryFilter {
-  static empty(): CategoryFilter {
-    return new CategoryFilter();
-  }
+export type CategorySearchRequest = Partial<
+  Omit<CategorySearch, 'status' | 'isActive'>
+> & {
+  status?: number[];
+  isActive?: number[];
+};
 
+export class CategoryFilter {
   constructor(
     readonly paramName = '',
     readonly paramValue = '',
     readonly paramType = '',
-    readonly status: string[] = [],
-    readonly isActive: string[] = [],
+    readonly status = '',
+    readonly isActive = '',
   ) {}
 
-  static fromValue(value?: Partial<CategoryFilterValue> | null): CategoryFilter {
+  static empty(): CategoryFilter {
+    return new CategoryFilter();
+  }
+
+  static fromForm(form: Partial<CategoryFilterForm> | null | undefined): CategoryFilter {
     return new CategoryFilter(
-      value?.paramName ?? '',
-      value?.paramValue ?? '',
-      value?.paramType ?? '',
-      Array.isArray(value?.status) ? [...value.status] : [],
-      Array.isArray(value?.isActive) ? [...value.isActive] : [],
+      form?.paramName ?? '',
+      form?.paramValue ?? '',
+      form?.paramType ?? '',
+      form?.status ?? '',
+      form?.isActive ?? '',
     );
   }
 
-  toValue(): CategoryFilterValue {
+  toForm(): CategoryFilterForm {
     return {
       paramName: this.paramName,
       paramValue: this.paramValue,
       paramType: this.paramType,
-      status: [...this.status],
-      isActive: [...this.isActive],
+      status: this.status,
+      isActive: this.isActive,
     };
   }
 
-  toRequest(): Partial<CategorySearch> {
-    const request: Record<string, unknown> = {};
+  toSearchRequest(): CategorySearchRequest {
+    const request: CategorySearchRequest = {};
 
     if (this.paramName.trim()) {
-      request['paramName'] = this.paramName.trim();
-    }
-    if (this.paramValue.trim()) {
-      request['paramValue'] = this.paramValue.trim();
-    }
-    if (this.paramType.trim()) {
-      request['paramType'] = this.paramType.trim();
-    }
-    if (this.status.length > 0) {
-      request['status'] = this.status.map(Number);
-    }
-    if (this.isActive.length > 0) {
-      request['isActive'] = this.isActive.map(Number);
+      request.paramName = this.paramName.trim();
     }
 
-    return request as Partial<CategorySearch>;
+    if (this.paramValue.trim()) {
+      request.paramValue = this.paramValue.trim();
+    }
+
+    if (this.paramType.trim()) {
+      request.paramType = this.paramType.trim();
+    }
+
+    if (this.status !== '') {
+      request.status = [Number(this.status)];
+    }
+
+    if (this.isActive !== '') {
+      request.isActive = [Number(this.isActive)];
+    }
+
+    return request;
   }
 
-  matches(item: Category): boolean {
-    const contains = (source: string | undefined, query: string) =>
-      !query.trim() || (source ?? '').toLowerCase().includes(query.trim().toLowerCase());
+  matches(category: Category): boolean {
+    if (this.status !== '' && category.status !== Number(this.status)) {
+      return false;
+    }
 
-    if (!contains(item.paramName, this.paramName)) {
-      return false;
-    }
-    if (!contains(item.paramValue, this.paramValue)) {
-      return false;
-    }
-    if (!contains(item.paramType, this.paramType)) {
-      return false;
-    }
-    if (this.status.length > 0 && !this.status.some((value) => item.status === Number(value))) {
-      return false;
-    }
-    if (
-      this.isActive.length > 0 &&
-      !this.isActive.some((value) => item.isActive === Number(value))
-    ) {
+    if (this.isActive !== '' && category.isActive !== Number(this.isActive)) {
       return false;
     }
 
     return true;
-  }
-
-  get isEmpty(): boolean {
-    return (
-      !this.paramName.trim() &&
-      !this.paramValue.trim() &&
-      !this.paramType.trim() &&
-      this.status.length === 0 &&
-      this.isActive.length === 0
-    );
   }
 }

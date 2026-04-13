@@ -1,6 +1,6 @@
 import { HttpClient, HttpResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { catchError, finalize, map, tap, throwError, timeout } from 'rxjs';
+import { catchError, finalize, map, of, tap, throwError } from 'rxjs';
 import {
   LoginRequest,
   LoginResponse,
@@ -39,7 +39,6 @@ export class AuthService {
         withCredentials: true,
       })
       .pipe(
-        timeout(10000),
         map((response) => this.extractLoginPayload(response)),
         tap((session) => this.persistSession(session)),
       );

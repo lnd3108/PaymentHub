@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
+import { MeResponse } from '../models/auth.models';
 import { AuthService } from './auth.service';
 
-type CategoryAction =
+export type CategoryAction =
   | 'create'
   | 'edit'
   | 'copy'
@@ -17,7 +18,6 @@ type CategoryAction =
 })
 export class CategoryPermissionService {
   private readonly authService = inject(AuthService);
-
   private readonly adminRoles = new Set(['ROLE_ADMIN', 'ADMIN', 'SUPER_ADMIN']);
   private readonly categoryScopeKeywords = ['CATEGORY', 'CATEGORIES', 'DANH_MUC', 'THAM_SO', 'PARAM'];
   private readonly actionKeywords: Record<CategoryAction, string[]> = {
@@ -43,12 +43,12 @@ export class CategoryPermissionService {
       return true;
     }
 
-    const authorities = this.getGrantedAuthorities();
+    const authorities = this.getGrantedAuthorities(user);
     if (authorities.length === 0) {
       return true;
     }
 
-    const actionTokens = this.actionKeywords[action] ?? [];
+    const actionTokens = this.actionKeywords[action];
 
     return authorities.some((authority) => {
       const inCategoryScope = this.categoryScopeKeywords.some((keyword) => authority.includes(keyword));
@@ -57,32 +57,30 @@ export class CategoryPermissionService {
     });
   }
 
-  getDeniedMessage(action: CategoryAction): string {
+  getActionLabel(action: CategoryAction): string {
     switch (action) {
       case 'create':
-        return 'thêm mới';
+        return 'them moi';
       case 'edit':
-        return 'chỉnh sửa';
+        return 'chinh sua';
       case 'copy':
-        return 'sao chép';
+        return 'sao chep';
       case 'submit':
-        return 'gửi duyệt';
+        return 'gui duyet';
       case 'approve':
-        return 'phê duyệt';
+        return 'phe duyet';
       case 'cancelApprove':
-        return 'hủy duyệt';
+        return 'huy duyet';
       case 'delete':
-        return 'xóa';
+        return 'xoa';
       case 'export':
-        return 'xuất Excel';
+        return 'xuat Excel';
       case 'import':
         return 'import Excel';
     }
   }
 
-  getGrantedAuthorities(): string[] {
-    const user = this.authService.user();
-
+  getGrantedAuthorities(user: MeResponse | null = this.authService.user()): string[] {
     return [...(user?.roles ?? []), ...(user?.authorities ?? [])]
       .filter((value): value is string => !!value)
       .map((value) => value.toUpperCase());

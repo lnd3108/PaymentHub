@@ -1,7 +1,8 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Category } from '../../../../models/category.models';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CategoryEntity } from '../../../../domain/category/category.entity';
+import { CategoryStatusPolicy } from '../../../../domain/category/category-status';
+import { Category } from '../../../../models/category.models';
 
 @Component({
   selector: 'app-category-table',
@@ -18,7 +19,6 @@ export class CategoryTableComponent {
   @Input() size = 20;
   @Input() totalElements = 0;
   @Input() totalPages = 0;
-
   @Input() selectedIds = new Set<number>();
   @Input() allSelected = false;
   @Input() someSelected = false;
@@ -30,17 +30,18 @@ export class CategoryTableComponent {
   @Output() viewSubmit = new EventEmitter<Category>();
   @Output() viewApprove = new EventEmitter<Category>();
   @Output() viewCancelApprove = new EventEmitter<Category>();
-
   @Output() toggleAll = new EventEmitter<boolean>();
   @Output() toggleItem = new EventEmitter<{ item: Category; checked: boolean }>();
-
   @Output() pageChange = new EventEmitter<number>();
   @Output() sizeChange = new EventEmitter<number>();
 
   readonly pageSizeOptions = [20, 50, 100];
 
   get startItem(): number {
-    if (this.totalElements === 0) return 0;
+    if (this.totalElements === 0) {
+      return 0;
+    }
+
     return this.page * this.size + 1;
   }
 
@@ -50,17 +51,17 @@ export class CategoryTableComponent {
 
   get visiblePages(): number[] {
     if (this.totalPages <= 5) {
-      return Array.from({ length: this.totalPages }, (_, i) => i);
+      return Array.from({ length: this.totalPages }, (_, index) => index);
     }
 
     let start = Math.max(this.page - 2, 0);
-    let end = Math.min(start + 4, this.totalPages - 1);
+    const end = Math.min(start + 4, this.totalPages - 1);
 
     if (end - start < 4) {
       start = Math.max(end - 4, 0);
     }
 
-    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+    return Array.from({ length: end - start + 1 }, (_, index) => start + index);
   }
 
   onPrevPage(): void {
@@ -82,8 +83,7 @@ export class CategoryTableComponent {
   }
 
   onSizeSelect(event: Event): void {
-    const value = Number((event.target as HTMLSelectElement).value);
-    this.sizeChange.emit(value);
+    this.sizeChange.emit(Number((event.target as HTMLSelectElement).value));
   }
 
   getRowNumber(index: number): number {
@@ -146,22 +146,22 @@ export class CategoryTableComponent {
   }
 
   getStatusLabel(status: number): string {
-    return CategoryEntity.from({ status }).statusLabel;
+    return CategoryStatusPolicy.label(status);
   }
 
   getStatusClass(status: number): string {
-    return CategoryEntity.from({ status }).statusClass;
+    return CategoryStatusPolicy.badgeClass(status);
   }
 
   canSubmit(item: Category): boolean {
-    return CategoryEntity.from(item).canSubmit();
+    return CategoryEntity.fromModel(item).canSubmit();
   }
 
   canApprove(item: Category): boolean {
-    return CategoryEntity.from(item).canApprove();
+    return CategoryEntity.fromModel(item).canApprove();
   }
 
   canCancelApprove(item: Category): boolean {
-    return CategoryEntity.from(item).canCancelApprove();
+    return CategoryEntity.fromModel(item).canCancelApprove();
   }
 }

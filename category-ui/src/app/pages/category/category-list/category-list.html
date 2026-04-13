@@ -1,4 +1,4 @@
-﻿<div class="space-y-8">
+<div class="space-y-8">
   <section class="flex items-start justify-between gap-4">
     <div>
       <p class="text-sm text-gray-500">Trang chủ > Tham số danh mục theo nhóm</p>
@@ -19,15 +19,13 @@
   <section class="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
     <div class="mb-5">
       <h2 class="text-lg font-semibold text-[#2f3437]">Bộ lọc tìm kiếm</h2>
-      <p class="mt-1 text-sm text-gray-500">
-        Nhập thông tin để tìm kiếm danh sách tham số
-      </p>
+      <p class="mt-1 text-sm text-gray-500">Nhập thông tin để tìm kiếm danh sách tham số</p>
     </div>
 
     <app-category-filters
-      [statusOptions]="statusOptions"
-      [activeOptions]="activeOptions"
-      [currentFilters]="currentFilters"
+      [statusOptions]="facade.statusOptions"
+      [activeOptions]="facade.activeOptions"
+      [currentFilters]="facade.currentFilters"
       (search)="onSearch($event)"
       (reset)="onResetFilters()"
     />
@@ -42,7 +40,7 @@
         <span
           class="inline-flex min-w-8 items-center justify-center rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-600"
         >
-          {{ categories.length }}
+          {{ facade.categories.length }}
         </span>
       </div>
 
@@ -65,7 +63,7 @@
             Chọn file Excel
           </span>
           <span class="max-w-[150px] truncate text-right text-xs text-[#6b7280]">
-            {{ selectedFile?.name || 'Chưa chọn file' }}
+            {{ facade.selectedFile?.name || 'Chưa chọn file' }}
           </span>
         </label>
 
@@ -80,7 +78,7 @@
         <button
           type="button"
           (click)="importExcel()"
-          [disabled]="!selectedFile"
+          [disabled]="!facade.selectedFile"
           class="inline-flex items-center justify-center rounded-xl bg-[#007c7a] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#006766] disabled:cursor-not-allowed disabled:bg-[#b9d7d6]"
         >
           Import Excel
@@ -90,12 +88,12 @@
 
     <div class="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
       <div class="flex items-center gap-3">
-        <span class="text-sm text-gray-600 p-4">Đã chọn: {{ selectedCount }}</span>
+        <span class="p-4 text-sm text-gray-600">Đã chọn: {{ facade.selectedCount }}</span>
 
-        @if (selectedCount > 0 && !hasUniformSelectedStatus) {
+        @if (facade.selectedCount > 0 && !facade.hasUniformSelectedStatus) {
           <span class="text-xs text-amber-600">
-        Chỉ thao tác hàng loạt khi các bản ghi cùng trạng thái
-      </span>
+            Chỉ thao tác hàng loạt khi các bản ghi cùng trạng thái
+          </span>
         }
       </div>
 
@@ -103,7 +101,7 @@
         <button
           type="button"
           (click)="bulkSubmitSelected()"
-          [disabled]="loading || !canBulkSubmit"
+          [disabled]="facade.loading || !facade.canBulkSubmit"
           class="rounded-lg bg-[#0d8b89] px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           Gửi duyệt đã chọn
@@ -112,7 +110,7 @@
         <button
           type="button"
           (click)="bulkApproveSelected()"
-          [disabled]="loading || !canBulkApprove"
+          [disabled]="facade.loading || !facade.canBulkApprove"
           class="rounded-lg bg-[#d8a126] px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           Phê duyệt đã chọn
@@ -121,7 +119,7 @@
         <button
           type="button"
           (click)="bulkCancelApproveSelected()"
-          [disabled]="loading || !canBulkCancelApprove"
+          [disabled]="facade.loading || !facade.canBulkCancelApprove"
           class="rounded-lg bg-[#1f9d55] px-3 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
         >
           Hủy duyệt đã chọn
@@ -132,16 +130,16 @@
     <div class="px-6 py-5">
       <div class="rounded-2xl border border-gray-100 bg-white">
         <app-category-table
-          [categories]="categories"
-          [loading]="loading"
-          [error]="error"
-          [page]="page"
-          [size]="size"
-          [totalElements]="totalElements"
-          [totalPages]="totalPages"
-          [selectedIds]="selectedIds"
-          [allSelected]="allSelectedOnPage"
-          [someSelected]="someSelectedOnPage"
+          [categories]="facade.categories"
+          [loading]="facade.loading"
+          [error]="facade.error"
+          [page]="facade.page"
+          [size]="facade.size"
+          [totalElements]="facade.totalElements"
+          [totalPages]="facade.totalPages"
+          [selectedIds]="facade.selectedIds"
+          [allSelected]="facade.allSelectedOnPage"
+          [someSelected]="facade.someSelectedOnPage"
           (toggleAll)="onToggleSelectAll($event)"
           (toggleItem)="onToggleSelectItem($event)"
           (viewDetail)="goDetail($event)"

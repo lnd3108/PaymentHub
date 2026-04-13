@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from '../../../service/auth.service';
+import { RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-login-page',
@@ -41,18 +42,14 @@ export class LoginPage {
       .pipe(finalize(() => (this.isSubmitting = false)))
       .subscribe({
         next: () => {
-          this.toastr.success('Dang nhap thanh cong', 'Thanh cong');
+          this.toastr.success('Đăng nhập thành công', 'Thành công');
           const redirectTo = this.route.snapshot.queryParamMap.get('redirectTo');
           const safeRedirect = redirectTo?.startsWith('/') ? redirectTo : '/categories';
           void this.router.navigateByUrl(safeRedirect);
         },
         error: (error) => {
-          const message =
-            error?.name === 'TimeoutError'
-              ? 'Khong the ket noi may chu dang nhap trong thoi gian cho phep.'
-              : error?.error?.message || 'Dang nhap that bai, vui long thu lai.';
-
-          this.toastr.error(message, 'Loi dang nhap');
+          const message = error?.error?.message || 'Đăng nhập thất bại, vui lòng thử lại!';
+          this.toastr.error(message, 'Lỗi đăng nhập thất bại');
         },
       });
   }

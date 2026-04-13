@@ -1,11 +1,12 @@
-import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Component, OnInit, inject } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
-import { FormsModule } from '@angular/forms';
-import { CategoryService } from '../../../service/category.service';
-import { Category } from '../../../models/category.models';
 import { CategoryEntity } from '../../../domain/category/category.entity';
+import { CategoryStatusPolicy } from '../../../domain/category/category-status';
+import { Category } from '../../../models/category.models';
+import { CategoryService } from '../../../service/category.service';
 
 type DetailMode = 'detail' | 'submit' | 'approve' | 'cancel-approve';
 
@@ -25,10 +26,8 @@ export class CategoryDetailPage implements OnInit {
   mode: DetailMode = 'submit';
   id: number | null = null;
   loading = false;
-
   oldData: Category | null = null;
   newData: Category | null = null;
-
   showRejectModal = false;
   rejectReason = '';
   readonly rejectReasonMaxLength = 500;
@@ -49,7 +48,7 @@ export class CategoryDetailPage implements OnInit {
 
     this.categoryService.getById(id).subscribe({
       next: (data) => {
-        const parsedNewData = CategoryEntity.from(data).parsedNewData;
+        const parsedNewData = CategoryEntity.fromModel(data).parseNewData();
         const hasNewData = !!parsedNewData && Object.keys(parsedNewData).length > 0;
 
         if (this.mode === 'detail' || this.mode === 'cancel-approve') {
@@ -68,7 +67,7 @@ export class CategoryDetailPage implements OnInit {
       error: (err) => {
         console.error(err);
         this.loading = false;
-        this.toastr.error('Không tải được chi tiết', 'Lỗi');
+        this.toastr.error('Khong tai duoc chi tiet', 'Loi');
       },
     });
   }
@@ -78,32 +77,35 @@ export class CategoryDetailPage implements OnInit {
   }
 
   confirmSubmit(): void {
-    if (!this.id) return;
+    if (!this.id) {
+      return;
+    }
 
     this.categoryService.submit(this.id).subscribe({
       next: () => {
-        this.toastr.success('Gửi duyệt thành công', 'Thành công');
+        this.toastr.success('Gui duyet thanh cong', 'Thanh cong');
         void this.router.navigate(['/categories']);
       },
       error: (err) => {
         console.error(err);
-        this.toastr.error('Gửi duyệt thất bại', 'Lỗi');
+        this.toastr.error('Gui duyet that bai', 'Loi');
       },
     });
   }
 
   confirmApprove(): void {
-    if (!this.id) return;
+    if (!this.id) {
+      return;
+    }
 
     this.categoryService.approve(this.id).subscribe({
       next: () => {
-        this.toastr.success('Phê duyệt thành công', 'Thành công');
+        this.toastr.success('Phe duyet thanh cong', 'Thanh cong');
         void this.router.navigate(['/categories']);
       },
       error: (err) => {
         console.error('Approve error:', err);
-        console.error('Approve error body:', err?.error);
-        this.toastr.error(err?.error?.message || 'Phê duyệt thất bại', 'Lỗi');
+        this.toastr.error(err?.error?.message || 'Phe duyet that bai', 'Loi');
       },
     });
   }
@@ -114,18 +116,22 @@ export class CategoryDetailPage implements OnInit {
   }
 
   closeRejectModal(): void {
-    if (this.rejecting) return;
+    if (this.rejecting) {
+      return;
+    }
+
     this.showRejectModal = false;
     this.rejectReason = '';
   }
 
   submitReject(): void {
-    if (!this.id) return;
+    if (!this.id) {
+      return;
+    }
 
     const reason = this.rejectReason.trim();
-
     if (!reason) {
-      this.toastr.warning('Vui lòng nhập lý do từ chối', 'Cảnh báo');
+      this.toastr.warning('Vui long nhap ly do tu choi', 'Canh bao');
       return;
     }
 
@@ -136,74 +142,96 @@ export class CategoryDetailPage implements OnInit {
         this.rejecting = false;
         this.showRejectModal = false;
         this.rejectReason = '';
-        this.toastr.success('Từ chối thành công', 'Thành công');
+        this.toastr.success('Tu choi thanh cong', 'Thanh cong');
         void this.router.navigate(['/categories']);
       },
       error: (err) => {
         this.rejecting = false;
         console.error(err);
-        this.toastr.error(err?.error?.message || 'Từ chối thất bại', 'Lỗi');
+        this.toastr.error(err?.error?.message || 'Tu choi that bai', 'Loi');
       },
     });
   }
 
   confirmCancelApprove(): void {
-    if (!this.id) return;
+    if (!this.id) {
+      return;
+    }
 
     this.categoryService.cancelApprove(this.id).subscribe({
       next: () => {
-        this.toastr.success('Hủy duyệt thành công', 'Thành công');
+        this.toastr.success('Huy duyet thanh cong', 'Thanh cong');
         void this.router.navigate(['/categories']);
       },
       error: (err) => {
         console.error(err);
-        this.toastr.error('Hủy duyệt thất bại', 'Lỗi');
+        this.toastr.error('Huy duyet that bai', 'Loi');
       },
     });
   }
 
   get statusLabel(): string {
-    if (this.mode === 'submit') return `1 - ${CategoryEntity.from({ status: 1 }).statusLabel}`;
-    if (this.mode === 'approve') return `3 - ${CategoryEntity.from({ status: 3 }).statusLabel}`;
-    if (this.mode === 'cancel-approve')
-      return `4 - ${CategoryEntity.from({ status: 4 }).statusLabel}`;
-    return 'Chi tiết bản ghi';
+    if (this.mode === 'submit') {
+      return `1 - ${CategoryStatusPolicy.label(1)}`;
+    }
+
+    if (this.mode === 'approve') {
+      return `3 - ${CategoryStatusPolicy.label(3)}`;
+    }
+
+    if (this.mode === 'cancel-approve') {
+      return `4 - ${CategoryStatusPolicy.label(4)}`;
+    }
+
+    return 'Chi tiet ban ghi';
   }
 
   get badgeClass(): string {
-    if (this.mode === 'submit') return 'bg-[#d5f5f2] text-[#0f9f98]';
-    if (this.mode === 'approve') return 'bg-[#fff0c2] text-[#b7791f]';
-    if (this.mode === 'cancel-approve') return 'bg-[#d8f6df] text-[#1f9d55]';
+    if (this.mode === 'submit') {
+      return 'bg-[#d5f5f2] text-[#0f9f98]';
+    }
+
+    if (this.mode === 'approve') {
+      return 'bg-[#fff0c2] text-[#b7791f]';
+    }
+
+    if (this.mode === 'cancel-approve') {
+      return 'bg-[#d8f6df] text-[#1f9d55]';
+    }
+
     return 'bg-slate-100 text-slate-700';
   }
 
-  get oldDataEntries() {
+  get oldDataEntries(): [string, string][] {
     return [
-      ['Tên thành phần', this.oldData?.paramName || '-'],
-      ['Giá trị thành phần', this.oldData?.paramValue || '-'],
-      ['Danh mục theo nhóm', this.oldData?.paramType || '-'],
-      ['Cấu phần xử lý', this.oldData?.componentCode || '-'],
-      ['Ngày hiệu lực', this.oldData?.effectiveDate || '-'],
-      ['Ngày hết hiệu lực', this.oldData?.endEffectiveDate || '-'],
-      ['Mô tả', this.oldData?.description || '-'],
+      ['Ten thanh phan', this.oldData?.paramName || '-'],
+      ['Gia tri thanh phan', this.oldData?.paramValue || '-'],
+      ['Danh muc theo nhom', this.oldData?.paramType || '-'],
+      ['Cau phan xu ly', this.oldData?.componentCode || '-'],
+      ['Ngay hieu luc', this.oldData?.effectiveDate || '-'],
+      ['Ngay het hieu luc', this.oldData?.endEffectiveDate || '-'],
+      ['Mo ta', this.oldData?.description || '-'],
     ];
   }
 
-  get newDataEntries() {
+  get newDataEntries(): [string, string][] {
     return [
-      ['Tên thành phần', this.newData?.paramName || '-'],
-      ['Giá trị thành phần', this.newData?.paramValue || '-'],
-      ['Danh mục theo nhóm', this.newData?.paramType || '-'],
-      ['Cấu phần xử lý', this.newData?.componentCode || '-'],
-      ['Ngày hiệu lực', this.newData?.effectiveDate || '-'],
-      ['Ngày hết hiệu lực', this.newData?.endEffectiveDate || '-'],
-      ['Mô tả', this.newData?.description || '-'],
+      ['Ten thanh phan', this.newData?.paramName || '-'],
+      ['Gia tri thanh phan', this.newData?.paramValue || '-'],
+      ['Danh muc theo nhom', this.newData?.paramType || '-'],
+      ['Cau phan xu ly', this.newData?.componentCode || '-'],
+      ['Ngay hieu luc', this.newData?.effectiveDate || '-'],
+      ['Ngay het hieu luc', this.newData?.endEffectiveDate || '-'],
+      ['Mo ta', this.newData?.description || '-'],
     ];
   }
 
   isChanged(index: number, value: string): boolean {
-    if (!this.oldData || this.mode !== 'approve') return false;
-    const oldValue = this.oldDataEntries[index][1] as string;
+    if (!this.oldData || this.mode !== 'approve') {
+      return false;
+    }
+
+    const oldValue = this.oldDataEntries[index][1];
     return value !== oldValue && value !== '-';
   }
 }
