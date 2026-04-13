@@ -18,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.Objects;
 
 @RequiredArgsConstructor
 @Service
@@ -63,11 +62,11 @@ public class ImplGroupCategoryNativeService implements GroupCategoryNativeServic
         validateActionRequest(req);
 
         GroupCategory current = repository.getById(id);
-        if (isPending(current)) {
+        if (current.isPending()) {
             throw new BusinessException(ErrorCode.GC_ALREADY_PENDING);
         }
 
-        if (isPublished(current)) {
+        if (current.isPublished()) {
             if (!newDataHelper.hasMeaningfulNewData(current.getNewData())) {
                 throw new BusinessException(ErrorCode.GC_NO_CHANGES, "Khong co du lieu thay doi de gui duyet");
             }
@@ -103,7 +102,7 @@ public class ImplGroupCategoryNativeService implements GroupCategoryNativeServic
         validateActionRequest(req);
 
         GroupCategory current = repository.getById(id);
-        if (!isPending(current)) {
+        if (!current.isPending()) {
             throw new BusinessException(ErrorCode.GC_ONLY_PENDING_CAN_APPROVE);
         }
 
@@ -113,9 +112,9 @@ public class ImplGroupCategoryNativeService implements GroupCategoryNativeServic
             validator.validateRequiredEntity(approved);
             validator.validateDuplicateForEntity(approved, current.getId());
 
-            approved.setStatus(GroupCategoryConstant.STATUS_APPROVED);
-            approved.setIsDisplay(GroupCategoryConstant.DISPLAY_VISIBLE);
-            approved.setNewData(null);
+            approved.markAsApproved();
+            approved.show();
+            approved.clearNewData();
             repository.applyApprovedData(approved);
             return id;
         }
@@ -134,7 +133,7 @@ public class ImplGroupCategoryNativeService implements GroupCategoryNativeServic
         validateActionRequest(req);
 
         GroupCategory current = repository.getById(id);
-        if (!isPending(current)) {
+        if (!current.isPending()) {
             throw new BusinessException(ErrorCode.GC_ONLY_PENDING_CAN_REJECT);
         }
 
@@ -207,12 +206,4 @@ public class ImplGroupCategoryNativeService implements GroupCategoryNativeServic
         }
     }
 
-    private boolean isPending(GroupCategory entity) {
-        return Objects.equals(entity.getStatus(), GroupCategoryConstant.STATUS_PENDING);
-    }
-
-    private boolean isPublished(GroupCategory entity) {
-        return Objects.equals(entity.getStatus(), GroupCategoryConstant.STATUS_APPROVED)
-                || Objects.equals(entity.getIsDisplay(), GroupCategoryConstant.DISPLAY_VISIBLE);
-    }
 }

@@ -1,5 +1,6 @@
 package com.example.demo.groupcategory.entity;
 
+import com.example.demo.groupcategory.constant.GroupCategoryConstant;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -7,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.util.Objects;
 
 @Getter
 @Setter
@@ -57,4 +59,63 @@ public class GroupCategory {
 
     @Column (name = "END_EFFECTIVE_DATE")
     private LocalDate endEffectiveDate;
+
+    public void markAsDraft() {
+        this.status = GroupCategoryConstant.STATUS_DRAFT;
+    }
+
+    public void markAsPending() {
+        this.status = GroupCategoryConstant.STATUS_PENDING;
+    }
+
+    public void markAsApproved() {
+        this.status = GroupCategoryConstant.STATUS_APPROVED;
+    }
+
+    public void markAsRejected() {
+        this.status = GroupCategoryConstant.STATUS_REJECTED;
+    }
+
+    public void markAsCancelApproved() {
+        this.status = GroupCategoryConstant.STATUS_CANCEL_APPROVE;
+    }
+
+    public void applyDefaultFlags(Integer isActive, Integer isDisplay) {
+        this.isActive = isActive == null ? GroupCategoryConstant.ACTIVE_DEFAULT : isActive;
+        this.isDisplay = isDisplay == null ? GroupCategoryConstant.DISPLAY_HIDDEN : isDisplay;
+    }
+
+    public void updateOptionalFlags(Integer isActive, Integer isDisplay) {
+        if (isActive != null) {
+            this.isActive = isActive;
+        }
+        if (isDisplay != null) {
+            this.isDisplay = isDisplay;
+        }
+    }
+
+    public void show() {
+        this.isDisplay = GroupCategoryConstant.DISPLAY_VISIBLE;
+    }
+
+    public void hide() {
+        this.isDisplay = GroupCategoryConstant.DISPLAY_HIDDEN;
+    }
+
+    public void replaceNewData(String newData) {
+        this.newData = newData;
+    }
+
+    public void clearNewData() {
+        this.newData = null;
+    }
+
+    public boolean isPending() {
+        return Objects.equals(this.status, GroupCategoryConstant.STATUS_PENDING);
+    }
+
+    public boolean isPublished() {
+        return Objects.equals(this.status, GroupCategoryConstant.STATUS_APPROVED)
+                || Objects.equals(this.isDisplay, GroupCategoryConstant.DISPLAY_VISIBLE);
+    }
 }

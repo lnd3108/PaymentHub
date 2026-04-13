@@ -50,13 +50,12 @@ public class ImplGroupCategoryService implements GroupCategoryService {
         mapper.applyBaseFields(entity, req);
 
         //Set status = 1 - Tạo Mới
-        entity.setStatus(GroupCategoryConstant.STATUS_DRAFT);
+        entity.markAsDraft();
         //set is active về trạng thái đang hoạt động
-        entity.setIsActive(req.isActive() == null ? GroupCategoryConstant.ACTIVE_DEFAULT : req.isActive());
+        entity.applyDefaultFlags(req.isActive(), req.isDisplay());
         //để display về trạng thái chưa duyệt có thể xóa
-        entity.setIsDisplay(req.isDisplay() == null ? GroupCategoryConstant.DISPLAY_HIDDEN : req.isDisplay());
         //set newData = null
-        entity.setNewData(null);
+        entity.clearNewData();
 
         //lưu
         return repository.save(entity);
@@ -69,10 +68,9 @@ public class ImplGroupCategoryService implements GroupCategoryService {
         GroupCategory entity = new GroupCategory();
         mapper.applyBaseFields(entity, req);
 
-        entity.setStatus(GroupCategoryConstant.STATUS_PENDING);
-        entity.setIsActive(req.isActive() == null ? GroupCategoryConstant.ACTIVE_DEFAULT : req.isActive());
-        entity.setIsDisplay(req.isDisplay() == null ? GroupCategoryConstant.DISPLAY_HIDDEN : req.isDisplay());
-        entity.setNewData(null);
+        entity.markAsPending();
+        entity.applyDefaultFlags(req.isActive(), req.isDisplay());
+        entity.clearNewData();
 
         return repository.save(entity);
     }
@@ -85,7 +83,7 @@ public class ImplGroupCategoryService implements GroupCategoryService {
         GroupCategory current = getRequired(id);
 
         //kiểm tra trạng thái status và display
-        if (isPublished(current)) {
+        if (current.isPublished()) {
             //Tạo biến chưas bản ghi xem trước, tránh sửa trực tiếp object gốc
             GroupCategory preview = mapper.buildPreviewEntity(current, req);
             //check trùng sau khi map
@@ -98,7 +96,7 @@ public class ImplGroupCategoryService implements GroupCategoryService {
                 throw new BusinessException(ErrorCode.GC_NO_CHANGES);
             }
             //nếu dữ liệu mới sau khi check thì map vào bảng
-            current.setNewData(patchJson);
+            current.replaceNewData(patchJson);
             //lưu
             return repository.save(current);
         }
@@ -106,10 +104,9 @@ public class ImplGroupCategoryService implements GroupCategoryService {
         validator.validateDuplicateForUpsert(req, id);
 
         mapper.applyBaseFields(current, req);
-        current.setIsActive(req.isActive() == null ? current.getIsActive() : req.isActive());
-        current.setIsDisplay(req.isDisplay() == null ? current.getIsDisplay() : req.isDisplay());
-        current.setStatus(GroupCategoryConstant.STATUS_DRAFT);
-        current.setNewData(null);
+        current.updateOptionalFlags(req.isActive(), req.isDisplay());
+        current.markAsDraft();
+        current.clearNewData();
 
         return repository.save(current);
     }
@@ -117,11 +114,11 @@ public class ImplGroupCategoryService implements GroupCategoryService {
     public GroupCategory submit(Long id) {
         GroupCategory current = getRequired(id);
 
-        if (isPending(current)) {
+        if (current.isPending()) {
             throw new BusinessException(ErrorCode.GC_ALREADY_PENDING);
         }
 
-        if (isPublished(current)) {
+        if (current.isPublished()) {
             if (!newDataHelper.hasMeaningfulNewData(current.getNewData())) {
                 throw new BusinessException(
                         ErrorCode.GC_NO_CHANGES,
@@ -135,15 +132,15 @@ public class ImplGroupCategoryService implements GroupCategoryService {
             validator.validateRequiredEntity(preview);
             validator.validateDuplicateForEntity(preview, current.getId());
 
-            current.setStatus(GroupCategoryConstant.STATUS_PENDING);
+            current.markAsPending();
             return repository.save(current);
         }
 
         validator.validateRequiredEntity(current);
         validator.validateDuplicateForEntity(current, current.getId());
 
-        current.setStatus(GroupCategoryConstant.STATUS_PENDING);
-        current.setIsDisplay(GroupCategoryConstant.DISPLAY_HIDDEN);
+        current.markAsPending();
+        current.hide();
 
         return repository.save(current);
     }
@@ -151,7 +148,7 @@ public class ImplGroupCategoryService implements GroupCategoryService {
     public GroupCategory approve(Long id) {
         GroupCategory current = getRequired(id);
 
-        if (!isPending(current)) {
+        if (!current.isPending()) {
             throw new BusinessException(ErrorCode.GC_ONLY_PENDING_CAN_APPROVE);
         }
 
@@ -162,9 +159,9 @@ public class ImplGroupCategoryService implements GroupCategoryService {
         validator.validateRequiredEntity(current);
         validator.validateDuplicateForEntity(current, current.getId());
 
-        current.setStatus(GroupCategoryConstant.STATUS_APPROVED);
-        current.setIsDisplay(GroupCategoryConstant.DISPLAY_VISIBLE);
-        current.setNewData(null);
+        current.markAsApproved();
+        current.show();
+        current.clearNewData();
 
         return repository.save(current);
     }
@@ -172,17 +169,17 @@ public class ImplGroupCategoryService implements GroupCategoryService {
     public GroupCategory reject(Long id, String reason) {
         GroupCategory current = getRequired(id);
 
-        if (!isPending(current)) {
+        if (!current.isPending()) {
             throw new BusinessException(ErrorCode.GC_ONLY_PENDING_CAN_REJECT);
         }
 
         if (newDataHelper.hasMeaningfulNewData(current.getNewData())) {
-            current.setStatus(GroupCategoryConstant.STATUS_APPROVED);
-            current.setIsDisplay(GroupCategoryConstant.DISPLAY_VISIBLE);
-            current.setNewData(null);
+            current.markAsApproved();
+            current.show();
+            current.clearNewData();
         } else {
-            current.setStatus(GroupCategoryConstant.STATUS_REJECTED);
-            current.setIsDisplay(GroupCategoryConstant.DISPLAY_HIDDEN);
+            current.markAsRejected();
+            current.hide();
         }
 
         return repository.save(current);
@@ -195,9 +192,9 @@ public class ImplGroupCategoryService implements GroupCategoryService {
             throw new BusinessException(ErrorCode.GC_ONLY_APPROVED_CAN_CANCEL);
         }
 
-        current.setStatus(GroupCategoryConstant.STATUS_CANCEL_APPROVE);
-        current.setIsDisplay(GroupCategoryConstant.DISPLAY_HIDDEN);
-        current.setNewData(null);
+        current.markAsCancelApproved();
+        current.hide();
+        current.clearNewData();
 
         return repository.save(current);
     }
@@ -205,11 +202,11 @@ public class ImplGroupCategoryService implements GroupCategoryService {
     public void delete(Long id) {
         GroupCategory current = getRequired(id);
 
-        if (isPending(current)) {
+        if (current.isPending()) {
             throw new BusinessException(ErrorCode.GC_PENDING_CANNOT_DELETE);
         }
 
-        if (isPublished(current)) {
+        if (current.isPublished()) {
             throw new BusinessException(ErrorCode.GC_APPROVED_CANNOT_DELETE);
         }
 
@@ -294,12 +291,4 @@ public class ImplGroupCategoryService implements GroupCategoryService {
                 ));
     }
 
-    private boolean isPending(GroupCategory entity) {
-        return Objects.equals(entity.getStatus(), GroupCategoryConstant.STATUS_PENDING);
-    }
-
-    private boolean isPublished(GroupCategory entity) {
-        return Objects.equals(entity.getStatus(), GroupCategoryConstant.STATUS_APPROVED)
-                || Objects.equals(entity.getIsDisplay(), GroupCategoryConstant.DISPLAY_VISIBLE);
-    }
 }

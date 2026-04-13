@@ -4,16 +4,15 @@ import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import Swal from 'sweetalert2';
 
-import {
-  CategoryBatchActionResponse,
-  CategoryPageResponse,
-  CategoryService,
-} from '../../../service/category.service';
+import { CategoryBatchActionResponse, CategoryService } from '../../../service/category.service';
 import { Category } from '../../../models/category.models';
 import { CategoryFiltersComponent } from '../components/category-filters/category-filters';
 import { CategoryTableComponent } from '../components/category-table/category-table';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../../service/auth.service';
+import { CategoryPermissionService } from '../../../service/category-permission.service';
+import { CategoryListFacade } from './category-list.facade';
+import { CategoryEntity } from '../../../domain/category/category.entity';
+import { CategoryFilterValue } from '../../../domain/category/category-filter';
 
 @Component({
   selector: 'app-category-list',
@@ -21,32 +20,14 @@ import { AuthService } from '../../../service/auth.service';
   imports: [CommonModule, FormsModule, CategoryFiltersComponent, CategoryTableComponent],
   templateUrl: './category-list.html',
   styleUrl: './category-list.css',
+  providers: [CategoryListFacade],
 })
 export class CategoryList implements OnInit {
-  private categoryService = inject(CategoryService);
-  private toastr = inject(ToastrService);
-  private router = inject(Router);
-  private authService = inject(AuthService);
-
-  private readonly adminRoles = new Set(['ROLE_ADMIN', 'ADMIN', 'SUPER_ADMIN']);
-  private readonly categoryScopeKeywords = ['CATEGORY', 'CATEGORIES', 'DANH_MUC', 'THAM_SO', 'PARAM'];
-  private readonly actionKeywords: Record<string, string[]> = {
-    create: ['CREATE', 'ADD'],
-    edit: ['EDIT', 'UPDATE'],
-    copy: ['COPY', 'CREATE', 'ADD'],
-    submit: ['SUBMIT'],
-    approve: ['APPROVE'],
-    cancelApprove: ['CANCEL_APPROVE', 'CANCEL-APPROVE', 'CANCELAPPROVE'],
-    delete: ['DELETE', 'REMOVE'],
-    export: ['EXPORT'],
-    import: ['IMPORT'],
-  };
-
-  categories: Category[] = [];
-  selectedIds = new Set<number>();
-
-  loading = false;
-  error = '';
+  private readonly categoryService = inject(CategoryService);
+  private readonly toastr = inject(ToastrService);
+  private readonly router = inject(Router);
+  private readonly permissionService = inject(CategoryPermissionService);
+  private readonly facade = inject(CategoryListFacade);
 
   statusOptions: { value: string; label: string }[] = [
     { value: '', label: 'Tất cả' },
@@ -63,22 +44,46 @@ export class CategoryList implements OnInit {
     { value: '0', label: 'Không hoạt động' },
   ];
 
-  currentFilters = {
-    paramName: '',
-    paramValue: '',
-    paramType: '',
-    status: '',
-    isActive: '',
-  };
-
-  page = 0;
-  size = 20;
-  totalElements = 0;
-  totalPages = 0;
-  isFiltering = false;
+  selectedFile: File | null = null;
 
   ngOnInit(): void {
     this.loadCategories();
+  }
+
+  get categories(): Category[] {
+    return this.facade.categories;
+  }
+
+  get selectedIds(): Set<number> {
+    return this.facade.selectedIds;
+  }
+
+  get loading(): boolean {
+    return this.facade.loading;
+  }
+
+  get error(): string {
+    return this.facade.error;
+  }
+
+  get currentFilters() {
+    return this.facade.currentFilter.toValue();
+  }
+
+  get page(): number {
+    return this.facade.page;
+  }
+
+  get size(): number {
+    return this.facade.size;
+  }
+
+  get totalElements(): number {
+    return this.facade.totalElements;
+  }
+
+  get totalPages(): number {
+    return this.facade.totalPages;
   }
 
   get selectedItems(): Category[] {
@@ -137,118 +142,34 @@ export class CategoryList implements OnInit {
   }
 
   loadCategories(): void {
-    this.loading = true;
-    this.error = '';
-
-    this.categoryService.getAll(this.page, this.size).subscribe({
-      next: (res) => {
-        this.applyPageResponse(res);
-        this.loading = false;
-      },
-      error: (err) => {
-        console.error('Lỗi khi lấy danh sách category:', err);
-        this.error = 'Không tải được danh sách category';
-        this.loading = false;
-        this.toastr.error('Không tải được danh sách category', 'Lỗi');
-      },
+    this.facade.load(() => {
+      this.toastr.error('Không tải được danh sách category', 'Lỗi');
     });
   }
 
   searchCategories(): void {
-    const filters = this.currentFilters;
-    const request: any = {};
-
-    if (filters.paramName.trim()) {
-      request.paramName = filters.paramName.trim();
-    }
-    if (filters.paramValue.trim()) {
-      request.paramValue = filters.paramValue.trim();
-    }
-    if (filters.paramType.trim()) {
-      request.paramType = filters.paramType.trim();
-    }
-    if (filters.status !== '') {
-      request.status = [Number(filters.status)];
-    }
-    if (filters.isActive !== '') {
-      request.isActive = [Number(filters.isActive)];
-    }
-
-    this.loading = true;
-    this.error = '';
-
-    this.categoryService.search(request, this.page, this.size).subscribe({
-      next: (res: any) => {
-        this.applyPageResponse({
-          content: res?.content ?? [],
-          totalElements: res?.totalElements ?? 0,
-          totalPages: res?.totalPages ?? 0,
-          page: res?.page ?? res?.number ?? 0,
-          size: res?.size ?? this.size,
-          first: !!res?.first,
-          last: !!res?.last,
-          empty: !!res?.empty,
-        });
-        this.loading = false;
-      },
-      error: (err) => {
-        console.error('Lỗi khi tìm kiếm category:', err);
-        this.error = 'Không tìm kiếm được dữ liệu';
-        this.loading = false;
-        this.toastr.error('Tìm kiếm thất bại', 'Lỗi');
-      },
+    this.facade.search(undefined, () => {
+      this.toastr.error('Tìm kiếm thất bại', 'Lỗi');
     });
   }
 
-  onSearch(filters: {
-    paramName: string;
-    paramValue: string;
-    paramType: string;
-    status: string;
-    isActive: string;
-  }): void {
-    this.currentFilters = { ...filters };
-    this.isFiltering = true;
-    this.page = 0;
+  onSearch(filters: CategoryFilterValue): void {
+    this.facade.updateFilter(filters);
     this.searchCategories();
   }
 
   onResetFilters(): void {
-    this.currentFilters = {
-      paramName: '',
-      paramValue: '',
-      paramType: '',
-      status: '',
-      isActive: '',
-    };
-
-    this.isFiltering = false;
-    this.page = 0;
-    this.error = '';
-    this.loadCategories();
+    this.facade.resetFilters(() => {
+      this.toastr.error('Không tải được danh sách category', 'Lỗi');
+    });
   }
 
   onPageChange(newPage: number): void {
-    if (newPage < 0 || newPage >= this.totalPages || newPage === this.page) return;
-
-    this.page = newPage;
-
-    if (this.isFiltering) {
-      this.searchCategories();
-    } else {
-      this.loadCategories();
-    }
+    this.facade.changePage(newPage);
   }
 
   onSizeChange(newSize: number): void {
-    this.size = newSize;
-    this.page = 0;
-
-    if (this.isFiltering) {
-      this.searchCategories();
-    } else {
-      this.loadCategories();
-    }
+    this.facade.changeSize(newSize);
   }
 
   onToggleSelectAll(checked: boolean): void {
@@ -262,7 +183,7 @@ export class CategoryList implements OnInit {
       }
     }
 
-    this.selectedIds = new Set(this.selectedIds);
+    this.facade.selectedIds = new Set(this.selectedIds);
   }
 
   onToggleSelectItem(event: { item: Category; checked: boolean }): void {
@@ -275,7 +196,7 @@ export class CategoryList implements OnInit {
       this.selectedIds.delete(id);
     }
 
-    this.selectedIds = new Set(this.selectedIds);
+    this.facade.selectedIds = new Set(this.selectedIds);
   }
 
   bulkSubmitSelected(): void {
@@ -416,7 +337,7 @@ export class CategoryList implements OnInit {
       this.categoryService.cancelApprove(id).subscribe({
         next: () => {
           this.toastr.success('Hủy duyệt thành công', 'Thành công');
-          this.loadCategories();
+          this.facade.reloadCurrentView();
         },
         error: (err) => {
           console.error(err);
@@ -439,7 +360,7 @@ export class CategoryList implements OnInit {
     }
 
     if (item.isDisplay === 2) {
-      this.toastr.warning('Bản ghi đã duyệt không cho phép xóa', 'cảnh báo');
+      this.toastr.warning('Bản ghi đã duyệt không cho phép xóa', 'Cảnh báo');
       return;
     }
 
@@ -459,48 +380,22 @@ export class CategoryList implements OnInit {
       this.categoryService.delete(id).subscribe({
         next: () => {
           this.toastr.success('Xóa thành công', 'Thành công');
-          this.loadCategories();
+          this.facade.reloadCurrentView();
         },
         error: (err) => {
           console.error(err);
-
-          const message = err?.error?.message || 'Xóa thất bại';
           this.toastr.error('Bản ghi đang chờ duyệt không được phép xóa', 'Lỗi');
         },
       });
     });
   }
 
-  //xuất excel
   exportExcel(): void {
     if (!this.ensurePermission('export')) {
       return;
     }
 
-    const filters = this.currentFilters;
-    const request: any = {};
-
-    if (filters.paramName.trim()) {
-      request.paramName = filters.paramName.trim();
-    }
-
-    if (filters.paramValue.trim()) {
-      request.paramValue = filters.paramValue.trim();
-    }
-
-    if (filters.paramType.trim()) {
-      request.paramType = filters.paramType.trim();
-    }
-
-    if (filters.status !== '') {
-      request.status = [Number(filters.status)];
-    }
-
-    if (filters.isActive !== '') {
-      request.isActive = [Number(filters.isActive)];
-    }
-
-    this.categoryService.exportExcel(request).subscribe({
+    this.categoryService.exportExcel(this.facade.currentFilter.toRequest()).subscribe({
       next: (blob: Blob) => {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -522,8 +417,6 @@ export class CategoryList implements OnInit {
     });
   }
 
-  selectedFile: File | null = null;
-
   onFileChange(event: Event) {
     const input = event.target as HTMLInputElement;
     this.selectedFile = input.files?.[0] ?? null;
@@ -543,80 +436,21 @@ export class CategoryList implements OnInit {
       next: () => {
         this.toastr.success('Import thành công');
         this.selectedFile = null;
-        this.loadCategories();
+        this.facade.reloadCurrentView();
       },
       error: () => {
         this.toastr.error('Import thất bại');
       },
     });
   }
+
+  goDetail(item: Category): void {
+    if (!item.id) return;
+    this.router.navigate(['/categories', item.id, 'detail']);
+  }
+
   private canSubmit(item: Category): boolean {
-    return item.status === 1 || item.status === 5 || item.status === 6 || item.status === 7;
-  }
-
-  private clearSelection(): void {
-    this.selectedIds.clear();
-    this.selectedIds = new Set();
-  }
-
-  private applyPageResponse(res: CategoryPageResponse): void {
-    this.categories = res?.content ?? [];
-    this.totalElements = res?.totalElements ?? 0;
-    this.totalPages = res?.totalPages ?? 0;
-    this.page = res?.page ?? 0;
-    this.size = res?.size ?? this.size;
-    this.clearSelection();
-  }
-
-  private shouldRemainInCurrentList(item: Category): boolean {
-    if (this.currentFilters.status !== '' && item.status !== Number(this.currentFilters.status)) {
-      return false;
-    }
-
-    if (
-      this.currentFilters.isActive !== '' &&
-      item.isActive !== Number(this.currentFilters.isActive)
-    ) {
-      return false;
-    }
-
-    return true;
-  }
-
-  private applyUpdatedStatusRows(updatedRows: { id: number; status: number }[]): void {
-    const updatedMap = new Map<number, number>();
-    updatedRows.forEach((row) => updatedMap.set(row.id, row.status));
-
-    const touchedRows: Category[] = [];
-    const untouchedRows: Category[] = [];
-    let removedCount = 0;
-
-    for (const item of this.categories) {
-      if (item.id == null || !updatedMap.has(item.id)) {
-        untouchedRows.push(item);
-        continue;
-      }
-
-      const merged: Category = {
-        ...item,
-        status: updatedMap.get(item.id),
-      };
-
-      if (this.shouldRemainInCurrentList(merged)) {
-        touchedRows.push(merged);
-      } else {
-        removedCount += 1;
-      }
-    }
-
-    this.categories = [...touchedRows, ...untouchedRows];
-
-    if (removedCount > 0) {
-      this.totalElements = Math.max(this.totalElements - removedCount, 0);
-      this.totalPages = this.totalElements > 0 ? Math.ceil(this.totalElements / this.size) : 0;
-    }
-
-    this.clearSelection();
+    return CategoryEntity.from(item).canSubmit();
   }
 
   private executeBatchAction(
@@ -638,13 +472,12 @@ export class CategoryList implements OnInit {
     }).then((result) => {
       if (!result.isConfirmed) return;
 
-      this.loading = true;
+      this.facade.loading = true;
 
       requestFactory().subscribe({
         next: (res: CategoryBatchActionResponse) => {
-          this.loading = false;
-
-          this.applyUpdatedStatusRows(res.updated ?? []);
+          this.facade.loading = false;
+          this.facade.applyBatchResult(res);
 
           if ((res.failedCount ?? 0) > 0) {
             const firstError = res.failed?.[0]?.message || `${actionLabel} có bản ghi thất bại`;
@@ -661,7 +494,7 @@ export class CategoryList implements OnInit {
           );
         },
         error: (err: any) => {
-          this.loading = false;
+          this.facade.loading = false;
           console.error(err);
           this.toastr.error(err?.error?.message || `${actionLabel} thất bại`, 'Lỗi');
         },
@@ -669,91 +502,17 @@ export class CategoryList implements OnInit {
     });
   }
 
-  goDetail(item: Category): void {
-    if (!item.id) return;
-    this.router.navigate(['/categories', item.id, 'detail']);
-  }
-
-  private ensurePermission(action: keyof CategoryList['actionKeywords']): boolean {
-    if (this.hasPermission(action)) {
+  private ensurePermission(action: Parameters<CategoryPermissionService['can']>[0]): boolean {
+    if (this.permissionService.can(action)) {
       return true;
     }
 
-    const actionLabel = this.getActionLabel(action);
-    console.error(`[Category] Không dủ quyền để ${actionLabel}.`, {
+    const actionLabel = this.permissionService.getDeniedMessage(action);
+    console.error(`[Category] Không đủ quyền để ${actionLabel}.`, {
       action,
-      authorities: this.getGrantedAuthorities(),
-      user: this.authService.user(),
+      authorities: this.permissionService.getGrantedAuthorities(),
     });
-    this.toastr.error(`Không dủ quyền để ${actionLabel}`, 'Lỗi');
+    this.toastr.error(`Không đủ quyền để ${actionLabel}`, 'Lỗi');
     return false;
-  }
-
-  private hasPermission(action: keyof CategoryList['actionKeywords']): boolean {
-    const user = this.authService.user();
-    if (!user) {
-      return false;
-    }
-
-    const normalizedRoles = (user.roles ?? []).map((role) => role.toUpperCase());
-    if (normalizedRoles.some((role) => this.adminRoles.has(role))) {
-      return true;
-    }
-
-    const authorities = this.getGrantedAuthorities();
-    if (authorities.length === 0) {
-      return true;
-    }
-
-    const actionTokens = this.actionKeywords[action] ?? [];
-
-    return authorities.some((authority) => {
-      const inCategoryScope = this.categoryScopeKeywords.some((keyword) => authority.includes(keyword));
-      const matchesAction = actionTokens.some((token) => authority.includes(token));
-      return inCategoryScope && matchesAction;
-    });
-  }
-
-  private getGrantedAuthorities(): string[] {
-    const user = this.authService.user();
-
-    return [...(user?.roles ?? []), ...(user?.authorities ?? [])]
-      .filter((value): value is string => !!value)
-      .map((value) => value.toUpperCase());
-  }
-
-  private handleForbiddenError(err: any, actionLabel: string): boolean {
-    if (err?.status !== 403) {
-      return false;
-    }
-
-    console.error(`[Category] Không đủ quyền để ${actionLabel}.`, err);
-    this.toastr.error(`Không dủ quyền để ${actionLabel}`, 'Lỗi');
-    return true;
-  }
-
-  private getActionLabel(action: keyof CategoryList['actionKeywords']): string {
-    switch (action) {
-      case 'create':
-        return 'thêm mới';
-      case 'edit':
-        return 'chỉnh sửa';
-      case 'copy':
-        return 'sao chép';
-      case 'submit':
-        return 'gửi duyệt';
-      case 'approve':
-        return 'phê duyệt';
-      case 'cancelApprove':
-        return 'hủy duyệt';
-      case 'delete':
-        return 'xóa';
-      case 'export':
-        return 'xuất Excel';
-      case 'import':
-        return 'import Excel';
-      default:
-        return 'thao tác';
-    }
   }
 }

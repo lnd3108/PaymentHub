@@ -5,6 +5,7 @@ import { ToastrService } from 'ngx-toastr';
 import { FormsModule } from '@angular/forms';
 import { CategoryService } from '../../../service/category.service';
 import { Category } from '../../../models/category.models';
+import { CategoryEntity } from '../../../domain/category/category.entity';
 
 type DetailMode = 'detail' | 'submit' | 'approve' | 'cancel-approve';
 
@@ -16,10 +17,10 @@ type DetailMode = 'detail' | 'submit' | 'approve' | 'cancel-approve';
   styleUrl: './category-detail-page.css',
 })
 export class CategoryDetailPage implements OnInit {
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
-  private toastr = inject(ToastrService);
-  private categoryService = inject(CategoryService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly toastr = inject(ToastrService);
+  private readonly categoryService = inject(CategoryService);
 
   mode: DetailMode = 'submit';
   id: number | null = null;
@@ -48,7 +49,7 @@ export class CategoryDetailPage implements OnInit {
 
     this.categoryService.getById(id).subscribe({
       next: (data) => {
-        const parsedNewData = this.parseNewData(data);
+        const parsedNewData = CategoryEntity.from(data).parsedNewData;
         const hasNewData = !!parsedNewData && Object.keys(parsedNewData).length > 0;
 
         if (this.mode === 'detail' || this.mode === 'cancel-approve') {
@@ -70,14 +71,6 @@ export class CategoryDetailPage implements OnInit {
         this.toastr.error('Không tải được chi tiết', 'Lỗi');
       },
     });
-  }
-
-  parseNewData(item: Category): Category | null {
-    try {
-      return item.newData ? JSON.parse(item.newData) : null;
-    } catch {
-      return null;
-    }
   }
 
   goBack(): void {
@@ -170,9 +163,10 @@ export class CategoryDetailPage implements OnInit {
   }
 
   get statusLabel(): string {
-    if (this.mode === 'submit') return '1 - Tạo mới';
-    if (this.mode === 'approve') return '3 - Chờ phê duyệt';
-    if (this.mode === 'cancel-approve') return '4 - Đã phê duyệt';
+    if (this.mode === 'submit') return `1 - ${CategoryEntity.from({ status: 1 }).statusLabel}`;
+    if (this.mode === 'approve') return `3 - ${CategoryEntity.from({ status: 3 }).statusLabel}`;
+    if (this.mode === 'cancel-approve')
+      return `4 - ${CategoryEntity.from({ status: 4 }).statusLabel}`;
     return 'Chi tiết bản ghi';
   }
 

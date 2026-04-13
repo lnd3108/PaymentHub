@@ -8,6 +8,4 @@ import org.springframework.web.multipart.MultipartFile;
 public interface GroupCategoryExcelService {
     byte[] exportExcel(GroupCategorySearchReq req);
     GroupCatExcelImportResult importExcel(MultipartFile file, boolean submitAfterImport);
-
-
 }

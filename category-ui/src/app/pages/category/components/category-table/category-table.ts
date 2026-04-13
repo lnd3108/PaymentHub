@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Category } from '../../../../models/category.models';
+import { CategoryEntity } from '../../../../domain/category/category.entity';
 
 @Component({
   selector: 'app-category-table',
@@ -145,48 +146,22 @@ export class CategoryTableComponent {
   }
 
   getStatusLabel(status: number): string {
-    switch (status) {
-      case 1:
-        return 'Tạo mới';
-      case 3:
-        return 'Chờ phê duyệt';
-      case 4:
-        return 'Đã phê duyệt';
-      case 5:
-        return 'Từ chối';
-      case 7:
-        return 'Hủy duyệt';
-      default:
-        return 'Không xác định';
-    }
+    return CategoryEntity.from({ status }).statusLabel;
   }
 
   getStatusClass(status: number): string {
-    switch (status) {
-      case 1:
-        return 'bg-cyan-50 text-cyan-700';
-      case 3:
-        return 'bg-amber-50 text-amber-700';
-      case 4:
-        return 'bg-green-50 text-green-700';
-      case 5:
-        return 'bg-red-50 text-red-700';
-      case 7:
-        return 'bg-slate-100 text-slate-700';
-      default:
-        return 'bg-slate-100 text-slate-700';
-    }
+    return CategoryEntity.from({ status }).statusClass;
   }
 
   canSubmit(item: Category): boolean {
-    return item.status === 1 || item.status === 5 || item.status === 6 || item.status === 7;
+    return CategoryEntity.from(item).canSubmit();
   }
 
   canApprove(item: Category): boolean {
-    return item.status === 3;
+    return CategoryEntity.from(item).canApprove();
   }
 
   canCancelApprove(item: Category): boolean {
-    return item.status === 4;
+    return CategoryEntity.from(item).canCancelApprove();
   }
 }
