@@ -3,10 +3,12 @@ package com.example.demo.groupcategory.controller;
 import com.example.demo.common.paging.PageResponse;
 import com.example.demo.common.paging.PagingRequest;
 import com.example.demo.common.response.ApiResponse;
+import com.example.demo.groupcategory.dto.request.GroupCategoryBatchReq;
 import com.example.demo.groupcategory.dto.request.GroupCategoryRejectReq;
 import com.example.demo.groupcategory.dto.request.GroupCategorySearchReq;
 import com.example.demo.groupcategory.dto.request.GroupCategoryUpsertReq;
 import com.example.demo.groupcategory.dto.excel.GroupCatExcelImportResult;
+import com.example.demo.groupcategory.dto.response.GroupCategoryBatchActionResponse;
 import com.example.demo.groupcategory.dto.response.GroupCategoryResponse;
 import com.example.demo.groupcategory.service.GroupCategoryExcelService;
 import com.example.demo.groupcategory.service.GroupCategoryService;
@@ -128,5 +130,29 @@ public class GroupCategoryController {
                 "Import excel success",
                 groupCategoryExcelService.importExcel(file, submitAfterImport)
         );
+    }
+
+    @PreAuthorize("hasAuthority('GC_SUBMIT') or hasAuthority('GC_ADMIN')")
+    @PostMapping("/submit-batch")
+    public ApiResponse<GroupCategoryBatchActionResponse> submitBatch(
+            @Valid @RequestBody GroupCategoryBatchReq req
+    ) {
+        return ApiResponse.success("Submit batch success", service.submitBatch(req));
+    }
+
+    @PreAuthorize("hasAuthority('GC_APPROVE') or hasAuthority('GC_ADMIN')")
+    @PostMapping("/approve-batch")
+    public ApiResponse<GroupCategoryBatchActionResponse> approveBatch(
+            @Valid @RequestBody GroupCategoryBatchReq req
+    ) {
+        return ApiResponse.success("Approve batch success", service.approveBatch(req));
+    }
+
+    @PreAuthorize("hasAuthority('GC_CANCEL_APPROVE') or hasAuthority('GC_ADMIN')")
+    @PostMapping("/batch-cancel-approve")
+    public ApiResponse<GroupCategoryBatchActionResponse> batchCancelApprove(
+            @Valid @RequestBody GroupCategoryBatchReq req
+    ) {
+        return ApiResponse.success("Batch cancel approve success", service.batchCancelApprove(req));
     }
 }

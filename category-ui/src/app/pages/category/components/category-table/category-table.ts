@@ -18,6 +18,10 @@ export class CategoryTableComponent {
   @Input() totalElements = 0;
   @Input() totalPages = 0;
 
+  @Input() selectedIds = new Set<number>();
+  @Input() allSelected = false;
+  @Input() someSelected = false;
+
   @Output() viewDetail = new EventEmitter<Category>();
   @Output() edit = new EventEmitter<Category>();
   @Output() delete = new EventEmitter<Category>();
@@ -25,6 +29,9 @@ export class CategoryTableComponent {
   @Output() viewSubmit = new EventEmitter<Category>();
   @Output() viewApprove = new EventEmitter<Category>();
   @Output() viewCancelApprove = new EventEmitter<Category>();
+
+  @Output() toggleAll = new EventEmitter<boolean>();
+  @Output() toggleItem = new EventEmitter<{ item: Category; checked: boolean }>();
 
   @Output() pageChange = new EventEmitter<number>();
   @Output() sizeChange = new EventEmitter<number>();
@@ -118,6 +125,23 @@ export class CategoryTableComponent {
 
   onCheckboxClick(event: MouseEvent): void {
     event.stopPropagation();
+  }
+
+  onToggleAll(event: Event): void {
+    this.onCheckboxClick(event as MouseEvent);
+    this.toggleAll.emit((event.target as HTMLInputElement).checked);
+  }
+
+  onToggleItem(item: Category, event: Event): void {
+    this.onCheckboxClick(event as MouseEvent);
+    this.toggleItem.emit({
+      item,
+      checked: (event.target as HTMLInputElement).checked,
+    });
+  }
+
+  isSelected(item: Category): boolean {
+    return item.id != null && this.selectedIds.has(item.id);
   }
 
   getStatusLabel(status: number): string {

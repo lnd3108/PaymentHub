@@ -6,9 +6,13 @@ import com.example.demo.common.exception.ErrorCode;
 import com.example.demo.common.paging.PageResponse;
 import com.example.demo.common.paging.PagingRequest;
 import com.example.demo.common.paging.PagingUtils;
+import com.example.demo.groupcategory.dto.request.GroupCategoryBatchReq;
 import com.example.demo.groupcategory.dto.request.GroupCategorySearchReq;
 import com.example.demo.groupcategory.dto.request.GroupCategoryUpsertReq;
+import com.example.demo.groupcategory.dto.response.GroupCategoryBatchActionResponse;
+import com.example.demo.groupcategory.dto.response.GroupCategoryBatchError;
 import com.example.demo.groupcategory.dto.response.GroupCategoryResponse;
+import com.example.demo.groupcategory.dto.response.GroupCategoryStatusOnlyResponse;
 import com.example.demo.groupcategory.entity.GroupCategory;
 import com.example.demo.groupcategory.mapper.GroupCategoryMapper;
 import com.example.demo.groupcategory.repository.GroupCategoryRepository;
@@ -21,7 +25,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Objects;
+import java.util.*;
 
 @Service
 @Transactional
@@ -221,6 +225,60 @@ public class GroupCategoryService {
         Pageable pageable = PagingUtils.toPageable(pagingRequest);
         Page<GroupCategory> pageData = repository.findAll(GroupCategorySpecification.search(req), pageable);
         return PageResponse.from(pageData, GroupCategoryResponse::from);
+    }
+
+    public GroupCategoryBatchActionResponse submitBatch(GroupCategoryBatchReq req) {
+        return processBatch(req, this::submit);
+    }
+
+    public GroupCategoryBatchActionResponse approveBatch(GroupCategoryBatchReq req) {
+        return processBatch(req, this::approve);
+    }
+
+    public GroupCategoryBatchActionResponse batchCancelApprove(GroupCategoryBatchReq req) {
+        return processBatch(req, this::cancelApprove);
+    }
+
+    private GroupCategoryBatchActionResponse processBatch(
+            GroupCategoryBatchReq req,
+            BatchActionExecutor executor
+    ) {
+        Set<Long> uniqueIds = new LinkedHashSet<>(req.ids());
+        if (uniqueIds.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, "ids không được để trống");
+        }
+
+        List<GroupCategoryStatusOnlyResponse> updated = new ArrayList<>();
+        List<GroupCategoryBatchError> failed = new ArrayList<>();
+
+        for (Long id : uniqueIds) {
+            if (id == null) {
+                failed.add(new GroupCategoryBatchError(null, ErrorCode.INVALID_REQUEST.getCode(), "id không hợp lệ"));
+                continue;
+            }
+
+            try {
+                GroupCategory entity = executor.execute(id);
+                updated.add(GroupCategoryStatusOnlyResponse.from(entity));
+            } catch (BusinessException ex) {
+                failed.add(new GroupCategoryBatchError(id, ex.getCode(), ex.getMessage()));
+            } catch (Exception ex) {
+                failed.add(new GroupCategoryBatchError(id, ErrorCode.INTERNAL_ERROR.getCode(), "Lỗi hệ thống"));
+            }
+        }
+
+        return new GroupCategoryBatchActionResponse(
+                uniqueIds.size(),
+                updated.size(),
+                failed.size(),
+                updated,
+                failed
+        );
+    }
+
+    @FunctionalInterface
+    private interface BatchActionExecutor {
+        GroupCategory execute(Long id);
     }
 
     public GroupCategory getCategoryById(Long id) {

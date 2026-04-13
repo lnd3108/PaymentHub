@@ -22,6 +22,25 @@ export interface CategoryPageResponse {
   sortDir?: string | null;
 }
 
+export interface  CategoryStatusOnlyResponse{
+  id: number;
+  status: number;
+}
+
+export interface CategoryBatchError{
+  id: number | null;
+  code: string;
+  message: string;
+}
+
+export interface CategoryBatchActionResponse{
+  totalRequested: number;
+  successCount: number;
+  failedCount: number;
+  updated: CategoryStatusOnlyResponse[];
+  failed: CategoryBatchError[];
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -103,13 +122,33 @@ export class CategoryService {
       .pipe(map((res) => res.data));
   }
 
+  submitBatch(ids: number[]): Observable<CategoryBatchActionResponse> {
+    return this.http
+      .post<ApiResponse<CategoryBatchActionResponse>>(`${this.apiUrl}/submit-batch`, { ids })
+      .pipe(map((res) => res.data));
+  }
+
+  approveBatch(ids: number[]): Observable<CategoryBatchActionResponse> {
+    return this.http
+      .post<ApiResponse<CategoryBatchActionResponse>>(`${this.apiUrl}/approve-batch`, { ids })
+      .pipe(map((res) => res.data));
+  }
+
+  cancelApproveBatch(ids: number[]): Observable<CategoryBatchActionResponse> {
+    return this.http
+      .post<
+        ApiResponse<CategoryBatchActionResponse>
+      >(`${this.apiUrl}/batch-cancel-approve`, { ids })
+      .pipe(map((res) => res.data));
+  }
+
   exportExcel(filters?: any) {
     return this.http.post(`${this.apiUrl}/export`, filters || {}, {
       responseType: 'blob',
     });
   }
 
-  importExcel(file: File, submitAfterImport: false){
+  importExcel(file: File, submitAfterImport: false) {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('submitAfterImport', String(submitAfterImport));

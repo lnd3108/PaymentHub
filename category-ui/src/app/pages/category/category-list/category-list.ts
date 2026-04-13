@@ -4,11 +4,16 @@ import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import Swal from 'sweetalert2';
 
-import { CategoryService } from '../../../service/category.service';
+import {
+  CategoryBatchActionResponse,
+  CategoryPageResponse,
+  CategoryService,
+} from '../../../service/category.service';
 import { Category } from '../../../models/category.models';
 import { CategoryFiltersComponent } from '../components/category-filters/category-filters';
 import { CategoryTableComponent } from '../components/category-table/category-table';
 import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../../service/auth.service';
 
 @Component({
   selector: 'app-category-list',
@@ -21,8 +26,24 @@ export class CategoryList implements OnInit {
   private categoryService = inject(CategoryService);
   private toastr = inject(ToastrService);
   private router = inject(Router);
+  private authService = inject(AuthService);
+
+  private readonly adminRoles = new Set(['ROLE_ADMIN', 'ADMIN', 'SUPER_ADMIN']);
+  private readonly categoryScopeKeywords = ['CATEGORY', 'CATEGORIES', 'DANH_MUC', 'THAM_SO', 'PARAM'];
+  private readonly actionKeywords: Record<string, string[]> = {
+    create: ['CREATE', 'ADD'],
+    edit: ['EDIT', 'UPDATE'],
+    copy: ['COPY', 'CREATE', 'ADD'],
+    submit: ['SUBMIT'],
+    approve: ['APPROVE'],
+    cancelApprove: ['CANCEL_APPROVE', 'CANCEL-APPROVE', 'CANCELAPPROVE'],
+    delete: ['DELETE', 'REMOVE'],
+    export: ['EXPORT'],
+    import: ['IMPORT'],
+  };
 
   categories: Category[] = [];
+  selectedIds = new Set<number>();
 
   loading = false;
   error = '';
@@ -60,18 +81,68 @@ export class CategoryList implements OnInit {
     this.loadCategories();
   }
 
+  get selectedItems(): Category[] {
+    return this.categories.filter((item) => item.id != null && this.selectedIds.has(item.id));
+  }
+
+  get selectedCount(): number {
+    return this.selectedItems.length;
+  }
+
+  get selectedStatuses(): number[] {
+    return [
+      ...new Set(
+        this.selectedItems.map((item) => item.status).filter((v): v is number => v != null),
+      ),
+    ];
+  }
+
+  get hasUniformSelectedStatus(): boolean {
+    return this.selectedStatuses.length === 1;
+  }
+
+  get allSelectedOnPage(): boolean {
+    const ids = this.categories.map((item) => item.id).filter((id): id is number => id != null);
+    return ids.length > 0 && ids.every((id) => this.selectedIds.has(id));
+  }
+
+  get someSelectedOnPage(): boolean {
+    const ids = this.categories.map((item) => item.id).filter((id): id is number => id != null);
+    const count = ids.filter((id) => this.selectedIds.has(id)).length;
+    return count > 0 && count < ids.length;
+  }
+
+  get canBulkSubmit(): boolean {
+    return (
+      this.selectedCount > 0 &&
+      this.hasUniformSelectedStatus &&
+      this.selectedItems.every((item) => this.canSubmit(item))
+    );
+  }
+
+  get canBulkApprove(): boolean {
+    return (
+      this.selectedCount > 0 &&
+      this.hasUniformSelectedStatus &&
+      this.selectedItems.every((item) => item.status === 3)
+    );
+  }
+
+  get canBulkCancelApprove(): boolean {
+    return (
+      this.selectedCount > 0 &&
+      this.hasUniformSelectedStatus &&
+      this.selectedItems.every((item) => item.status === 4)
+    );
+  }
+
   loadCategories(): void {
     this.loading = true;
     this.error = '';
 
     this.categoryService.getAll(this.page, this.size).subscribe({
       next: (res) => {
-        this.categories = res?.content ?? [];
-        this.totalElements = res?.totalElements ?? 0;
-        this.totalPages = res?.totalPages ?? 0;
-        this.page = res.page ?? 0;
-        this.size = res.size ?? this.size;
-
+        this.applyPageResponse(res);
         this.loading = false;
       },
       error: (err) => {
@@ -90,92 +161,43 @@ export class CategoryList implements OnInit {
     if (filters.paramName.trim()) {
       request.paramName = filters.paramName.trim();
     }
-
     if (filters.paramValue.trim()) {
       request.paramValue = filters.paramValue.trim();
     }
     if (filters.paramType.trim()) {
       request.paramType = filters.paramType.trim();
     }
-
     if (filters.status !== '') {
       request.status = [Number(filters.status)];
     }
-
     if (filters.isActive !== '') {
       request.isActive = [Number(filters.isActive)];
     }
-
-    console.log('search request = ', request);
 
     this.loading = true;
     this.error = '';
 
     this.categoryService.search(request, this.page, this.size).subscribe({
       next: (res: any) => {
-        this.categories = res?.content ?? [];
-        this.totalElements = res?.totalElements ?? 0;
-        this.totalPages = res?.totalPages ?? 0;
-        this.page = res?.number ?? 0;
-        this.size = res?.size ?? this.size;
+        this.applyPageResponse({
+          content: res?.content ?? [],
+          totalElements: res?.totalElements ?? 0,
+          totalPages: res?.totalPages ?? 0,
+          page: res?.page ?? res?.number ?? 0,
+          size: res?.size ?? this.size,
+          first: !!res?.first,
+          last: !!res?.last,
+          empty: !!res?.empty,
+        });
         this.loading = false;
       },
       error: (err) => {
         console.error('Lỗi khi tìm kiếm category:', err);
-        console.error('Response error body:', err?.error);
         this.error = 'Không tìm kiếm được dữ liệu';
         this.loading = false;
         this.toastr.error('Tìm kiếm thất bại', 'Lỗi');
       },
     });
-  }
-
-  getActiveLabel(isActive: number): string {
-    switch (isActive) {
-      case 1:
-        return 'Hoạt động';
-      case 0:
-        return 'Không hoạt động';
-      default:
-        return 'Không xác định';
-    }
-  }
-
-  buildFilterOptions(data: Category[]): void {
-    const allowedStatuses = [1, 3, 4, 5, 7];
-    const allowedActives = [1, 0];
-
-    const uniqueStatuses = [
-      ...new Set(
-        data
-          .map((item) => item.status)
-          .filter((v): v is number => v !== null && v !== undefined && allowedStatuses.includes(v)),
-      ),
-    ].sort((a, b) => a - b);
-
-    const uniqueActives = [
-      ...new Set(
-        data
-          .map((item) => item.isActive)
-          .filter((v): v is number => v !== null && v !== undefined && allowedActives.includes(v)),
-      ),
-    ].sort((a, b) => a - b);
-
-    this.statusOptions = [
-      { value: '', label: 'Tất cả' },
-      ...uniqueStatuses.map((status) => ({
-        value: String(status),
-        label: this.getStatusLabel(status),
-      })),
-    ];
-
-    this.activeOptions = [
-      { value: '', label: 'Tất cả' },
-      ...uniqueActives.map((active) => ({
-        value: String(active),
-        label: this.getActiveLabel(active),
-      })),
-    ];
   }
 
   onSearch(filters: {
@@ -229,31 +251,148 @@ export class CategoryList implements OnInit {
     }
   }
 
+  onToggleSelectAll(checked: boolean): void {
+    for (const item of this.categories) {
+      if (item.id == null) continue;
+
+      if (checked) {
+        this.selectedIds.add(item.id);
+      } else {
+        this.selectedIds.delete(item.id);
+      }
+    }
+
+    this.selectedIds = new Set(this.selectedIds);
+  }
+
+  onToggleSelectItem(event: { item: Category; checked: boolean }): void {
+    const id = event.item.id;
+    if (id == null) return;
+
+    if (event.checked) {
+      this.selectedIds.add(id);
+    } else {
+      this.selectedIds.delete(id);
+    }
+
+    this.selectedIds = new Set(this.selectedIds);
+  }
+
+  bulkSubmitSelected(): void {
+    if (!this.ensurePermission('submit')) {
+      return;
+    }
+
+    if (!this.canBulkSubmit) {
+      this.toastr.warning(
+        'Chỉ được gửi duyệt nhiều bản ghi khi các bản ghi cùng trạng thái hợp lệ.',
+        'Cảnh báo',
+      );
+      return;
+    }
+
+    const ids = this.selectedItems.map((item) => item.id!).filter(Boolean);
+    this.executeBatchAction(
+      ids,
+      () => this.categoryService.submitBatch(ids),
+      'Xác nhận gửi duyệt',
+      'Gửi duyệt',
+    );
+  }
+
+  bulkApproveSelected(): void {
+    if (!this.ensurePermission('approve')) {
+      return;
+    }
+
+    if (!this.canBulkApprove) {
+      this.toastr.warning(
+        'Chỉ được phê duyệt nhiều bản ghi khi tất cả đang ở trạng thái chờ phê duyệt.',
+        'Cảnh báo',
+      );
+      return;
+    }
+
+    const ids = this.selectedItems.map((item) => item.id!).filter(Boolean);
+    this.executeBatchAction(
+      ids,
+      () => this.categoryService.approveBatch(ids),
+      'Xác nhận phê duyệt',
+      'Phê duyệt',
+    );
+  }
+
+  bulkCancelApproveSelected(): void {
+    if (!this.ensurePermission('cancelApprove')) {
+      return;
+    }
+
+    if (!this.canBulkCancelApprove) {
+      this.toastr.warning(
+        'Chỉ được hủy duyệt nhiều bản ghi khi tất cả đang ở trạng thái đã phê duyệt.',
+        'Cảnh báo',
+      );
+      return;
+    }
+
+    const ids = this.selectedItems.map((item) => item.id!).filter(Boolean);
+    this.executeBatchAction(
+      ids,
+      () => this.categoryService.cancelApproveBatch(ids),
+      'Xác nhận hủy duyệt',
+      'Hủy duyệt',
+    );
+  }
+
   goCreate(): void {
+    if (!this.ensurePermission('create')) {
+      return;
+    }
+
     this.router.navigate(['/categories/create']);
   }
 
   goEdit(item: Category): void {
+    if (!this.ensurePermission('edit')) {
+      return;
+    }
+
     if (!item.id) return;
     this.router.navigate(['/categories', item.id, 'edit']);
   }
 
   goCopy(item: Category): void {
+    if (!this.ensurePermission('copy')) {
+      return;
+    }
+
     if (!item.id) return;
     this.router.navigate(['/categories', item.id, 'copy']);
   }
 
   goSubmit(item: Category): void {
+    if (!this.ensurePermission('submit')) {
+      return;
+    }
+
     if (!item.id) return;
     this.router.navigate(['/categories', item.id, 'submit']);
   }
 
   goApprove(item: Category): void {
+    if (!this.ensurePermission('approve')) {
+      return;
+    }
+
     if (!item.id) return;
     this.router.navigate(['/categories', item.id, 'approve']);
   }
 
   goCancelApprove(item: Category): void {
+    if (!this.ensurePermission('cancelApprove')) {
+      return;
+    }
+
     const id = item.id;
 
     if (id == null) {
@@ -288,6 +427,10 @@ export class CategoryList implements OnInit {
   }
 
   deleteCategory(item: Category): void {
+    if (!this.ensurePermission('delete')) {
+      return;
+    }
+
     const id = item.id;
 
     if (id == null) {
@@ -322,7 +465,7 @@ export class CategoryList implements OnInit {
           console.error(err);
 
           const message = err?.error?.message || 'Xóa thất bại';
-          this.toastr.error('Xóa thất bại', 'Lỗi');
+          this.toastr.error('Bản ghi đang chờ duyệt không được phép xóa', 'Lỗi');
         },
       });
     });
@@ -330,6 +473,10 @@ export class CategoryList implements OnInit {
 
   //xuất excel
   exportExcel(): void {
+    if (!this.ensurePermission('export')) {
+      return;
+    }
+
     const filters = this.currentFilters;
     const request: any = {};
 
@@ -383,6 +530,10 @@ export class CategoryList implements OnInit {
   }
 
   importExcel() {
+    if (!this.ensurePermission('import')) {
+      return;
+    }
+
     if (!this.selectedFile) {
       this.toastr.warning('Chọn file trước');
       return;
@@ -399,28 +550,210 @@ export class CategoryList implements OnInit {
       },
     });
   }
+  private canSubmit(item: Category): boolean {
+    return item.status === 1 || item.status === 5 || item.status === 6 || item.status === 7;
+  }
 
-  getStatusLabel(status: number): string {
-    switch (status) {
-      case 1:
-        return 'Tạo mới';
-      case 3:
-        return 'Chờ phê duyệt';
-      case 4:
-        return 'Đã phê duyệt';
-      case 5:
-        return 'Từ chối';
-      case 7:
-        return 'Hủy duyệt';
-      default:
-        return `Không xác định`;
+  private clearSelection(): void {
+    this.selectedIds.clear();
+    this.selectedIds = new Set();
+  }
+
+  private applyPageResponse(res: CategoryPageResponse): void {
+    this.categories = res?.content ?? [];
+    this.totalElements = res?.totalElements ?? 0;
+    this.totalPages = res?.totalPages ?? 0;
+    this.page = res?.page ?? 0;
+    this.size = res?.size ?? this.size;
+    this.clearSelection();
+  }
+
+  private shouldRemainInCurrentList(item: Category): boolean {
+    if (this.currentFilters.status !== '' && item.status !== Number(this.currentFilters.status)) {
+      return false;
     }
+
+    if (
+      this.currentFilters.isActive !== '' &&
+      item.isActive !== Number(this.currentFilters.isActive)
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+  private applyUpdatedStatusRows(updatedRows: { id: number; status: number }[]): void {
+    const updatedMap = new Map<number, number>();
+    updatedRows.forEach((row) => updatedMap.set(row.id, row.status));
+
+    const touchedRows: Category[] = [];
+    const untouchedRows: Category[] = [];
+    let removedCount = 0;
+
+    for (const item of this.categories) {
+      if (item.id == null || !updatedMap.has(item.id)) {
+        untouchedRows.push(item);
+        continue;
+      }
+
+      const merged: Category = {
+        ...item,
+        status: updatedMap.get(item.id),
+      };
+
+      if (this.shouldRemainInCurrentList(merged)) {
+        touchedRows.push(merged);
+      } else {
+        removedCount += 1;
+      }
+    }
+
+    this.categories = [...touchedRows, ...untouchedRows];
+
+    if (removedCount > 0) {
+      this.totalElements = Math.max(this.totalElements - removedCount, 0);
+      this.totalPages = this.totalElements > 0 ? Math.ceil(this.totalElements / this.size) : 0;
+    }
+
+    this.clearSelection();
+  }
+
+  private executeBatchAction(
+    ids: number[],
+    requestFactory: () => any,
+    title: string,
+    actionLabel: string,
+  ): void {
+    Swal.fire({
+      title,
+      text: `Bạn đang thao tác ${ids.length} bản ghi.`,
+      icon: 'warning',
+      showCancelButton: true,
+      cancelButtonText: 'Hủy',
+      confirmButtonText: 'Xác nhận',
+      reverseButtons: true,
+      confirmButtonColor: '#007c7a',
+      cancelButtonColor: '#6b7280',
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+
+      this.loading = true;
+
+      requestFactory().subscribe({
+        next: (res: CategoryBatchActionResponse) => {
+          this.loading = false;
+
+          this.applyUpdatedStatusRows(res.updated ?? []);
+
+          if ((res.failedCount ?? 0) > 0) {
+            const firstError = res.failed?.[0]?.message || `${actionLabel} có bản ghi thất bại`;
+            this.toastr.warning(
+              `${actionLabel} thành công ${res.successCount}/${res.totalRequested}. ${firstError}`,
+              'Cảnh báo',
+            );
+            return;
+          }
+
+          this.toastr.success(
+            `${actionLabel} thành công ${res.successCount} bản ghi`,
+            'Thành công',
+          );
+        },
+        error: (err: any) => {
+          this.loading = false;
+          console.error(err);
+          this.toastr.error(err?.error?.message || `${actionLabel} thất bại`, 'Lỗi');
+        },
+      });
+    });
   }
 
   goDetail(item: Category): void {
     if (!item.id) return;
     this.router.navigate(['/categories', item.id, 'detail']);
   }
+
+  private ensurePermission(action: keyof CategoryList['actionKeywords']): boolean {
+    if (this.hasPermission(action)) {
+      return true;
+    }
+
+    const actionLabel = this.getActionLabel(action);
+    console.error(`[Category] Không dủ quyền để ${actionLabel}.`, {
+      action,
+      authorities: this.getGrantedAuthorities(),
+      user: this.authService.user(),
+    });
+    this.toastr.error(`Không dủ quyền để ${actionLabel}`, 'Lỗi');
+    return false;
+  }
+
+  private hasPermission(action: keyof CategoryList['actionKeywords']): boolean {
+    const user = this.authService.user();
+    if (!user) {
+      return false;
+    }
+
+    const normalizedRoles = (user.roles ?? []).map((role) => role.toUpperCase());
+    if (normalizedRoles.some((role) => this.adminRoles.has(role))) {
+      return true;
+    }
+
+    const authorities = this.getGrantedAuthorities();
+    if (authorities.length === 0) {
+      return true;
+    }
+
+    const actionTokens = this.actionKeywords[action] ?? [];
+
+    return authorities.some((authority) => {
+      const inCategoryScope = this.categoryScopeKeywords.some((keyword) => authority.includes(keyword));
+      const matchesAction = actionTokens.some((token) => authority.includes(token));
+      return inCategoryScope && matchesAction;
+    });
+  }
+
+  private getGrantedAuthorities(): string[] {
+    const user = this.authService.user();
+
+    return [...(user?.roles ?? []), ...(user?.authorities ?? [])]
+      .filter((value): value is string => !!value)
+      .map((value) => value.toUpperCase());
+  }
+
+  private handleForbiddenError(err: any, actionLabel: string): boolean {
+    if (err?.status !== 403) {
+      return false;
+    }
+
+    console.error(`[Category] Không đủ quyền để ${actionLabel}.`, err);
+    this.toastr.error(`Không dủ quyền để ${actionLabel}`, 'Lỗi');
+    return true;
+  }
+
+  private getActionLabel(action: keyof CategoryList['actionKeywords']): string {
+    switch (action) {
+      case 'create':
+        return 'thêm mới';
+      case 'edit':
+        return 'chỉnh sửa';
+      case 'copy':
+        return 'sao chép';
+      case 'submit':
+        return 'gửi duyệt';
+      case 'approve':
+        return 'phê duyệt';
+      case 'cancelApprove':
+        return 'hủy duyệt';
+      case 'delete':
+        return 'xóa';
+      case 'export':
+        return 'xuất Excel';
+      case 'import':
+        return 'import Excel';
+      default:
+        return 'thao tác';
+    }
+  }
 }
-
-

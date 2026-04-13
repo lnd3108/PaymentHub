@@ -21,7 +21,16 @@
       <table class="min-w-full overflow-hidden rounded-2xl">
         <thead>
         <tr class="bg-gray-50 text-left text-sm text-gray-600">
-          <th class="border-b border-gray-200 px-4 py-3 font-semibold"></th>
+          <th class="border-b border-gray-200 px-4 py-3 font-semibold">
+            <input
+              class="size-6"
+              type="checkbox"
+              [checked]="allSelected"
+              [indeterminate]="someSelected"
+              (click)="onCheckboxClick($event)"
+              (change)="onToggleAll($event)"
+            />
+          </th>
           <th class="border-b border-gray-200 px-4 py-3 font-semibold">STT</th>
           <th class="border-b border-gray-200 px-4 py-3 font-semibold">Tên thành phần</th>
           <th class="border-b border-gray-200 px-4 py-3 font-semibold">Giá trị thành phần</th>
@@ -42,7 +51,13 @@
               (click)="onRowClick(item)"
             >
               <td class="border-b border-gray-100 px-4 py-3">
-                <input type="checkbox" (click)="onCheckboxClick($event)" />
+                <input
+                  class="size-6"
+                  type="checkbox"
+                  [checked]="isSelected(item)"
+                  (click)="onCheckboxClick($event)"
+                  (change)="onToggleItem(item, $event)"
+                />
               </td>
 
               <td class="border-b border-gray-100 px-4 py-3">{{ getRowNumber(i) }}</td>
