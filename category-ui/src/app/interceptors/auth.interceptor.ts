@@ -1,20 +1,44 @@
-import { HttpInterceptorFn } from '@angular/common/http';
+import {
+  HttpEvent,
+  HttpHandlerFn,
+  HttpInterceptorFn,
+  HttpRequest,
+  HttpResponse,
+} from '@angular/common/http';
 import { inject } from '@angular/core';
+import { Observable, tap } from 'rxjs';
 import { AuthService } from '../service/auth.service';
 
-export const authInterceptor: HttpInterceptorFn = (req, next) => {
+const ACCESS_TOKEN_HEADER = 'X-Access-Token';
+
+export const authInterceptor: HttpInterceptorFn = (
+  req: HttpRequest<unknown>,
+  next: HttpHandlerFn,
+): Observable<HttpEvent<unknown>> => {
   const authService = inject(AuthService);
   const token = authService.getAccessToken();
 
-  if (!token) {
-    return next(req);
-  }
+  const request = token
+    ? req.clone({
+        withCredentials: true,
+        setHeaders: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+    : req.clone({
+        withCredentials: true,
+      });
 
-  return next(
-    req.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`,
-      },
+  return next(request).pipe(
+    tap((event) => {
+      if (!(event instanceof HttpResponse)) {
+        return;
+      }
+
+      const refreshedAccessToken = event.headers.get(ACCESS_TOKEN_HEADER);
+      if (refreshedAccessToken) {
+        authService.updateAccessToken(refreshedAccessToken);
+      }
     }),
   );
 };

@@ -2,6 +2,7 @@ package com.example.demo.security.jwt;
 
 import com.example.demo.security.user.CustomUserDetails;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -37,6 +38,10 @@ public class JwtTokenProvider {
     public String generateAccessToken(Authentication authentication) {
         /// lấy userDetail: lấy user từ authentication
         CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        return generateAccessToken(userDetails);
+    }
+
+    public String generateAccessToken(CustomUserDetails userDetails){
         /// tạo object thời gian hiện tại
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + accessExpiration);
@@ -77,6 +82,17 @@ public class JwtTokenProvider {
         }
     }
 
+    public boolean isTokenExpired(String token){
+        try{
+            getClaims(token);
+            return false;
+        }catch (ExpiredJwtException ex){
+            return true;
+        }catch (Exception ex){
+            return false;
+        }
+    }
+
     /// lấy userId đã lưu trong claim của token
     public Long getUserIdFromToken(String token){
         Object value = getClaims(token).get("userId");
@@ -88,7 +104,19 @@ public class JwtTokenProvider {
         if(value instanceof Long l) return l;
         //trường hợp kháv thì parse sang long
         return Long.parseLong(value.toString());
+    }
 
+    public String getTokenType(String token){
+        Object value = getClaimsAllowExpired(token).get("type");
+        return value == null ? null : value.toString();
+    }
+
+    public boolean isAccessToken(String token){
+        return "access".equals(getTokenType(token));
+    }
+
+    public boolean isRefreshToken(String token){
+        return "refresh".equals(getTokenType(token));
     }
 
     /// parse token, verify chữ ký, lấy toàn bộ payload
@@ -98,6 +126,14 @@ public class JwtTokenProvider {
                 .build()//build parser hoàn chỉnh
                 .parseSignedClaims(token) //parser token đã ký
                 .getPayload(); // lấy payload bên trong token (payload = claims)
+    }
+
+    private Claims getClaimsAllowExpired(String token){
+        try{
+            return getClaims(token);
+        }catch (ExpiredJwtException ex){
+            return ex.getClaims();
+        }
     }
 
     /// đổi thời hạn sống của token từ miliseconds sang seconds

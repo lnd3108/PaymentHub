@@ -4,6 +4,7 @@ import com.example.demo.auth.dto.req.LoginRequest;
 import com.example.demo.auth.dto.req.RegisterRequest;
 import com.example.demo.auth.dto.res.LoginResponse;
 import com.example.demo.auth.dto.res.MeResponse;
+import com.example.demo.auth.dto.res.RefreshTokenResponse;
 import com.example.demo.auth.dto.res.RegisterResponse;
 import com.example.demo.auth.service.AuthService;
 import com.example.demo.common.response.ApiResponse;
@@ -35,6 +36,11 @@ public class AuthController {
             HttpServletResponse response
     ){
         return ApiResponse.success(authService.login(req, response));
+    }
+
+    @PostMapping("/refresh")
+    public ApiResponse<RefreshTokenResponse> refresh(HttpServletRequest request, HttpServletResponse response){
+        return ApiResponse.success(authService.refresh(request, response));
     }
 
     @PostMapping("/logout")

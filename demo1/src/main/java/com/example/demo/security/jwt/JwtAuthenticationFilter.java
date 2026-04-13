@@ -1,6 +1,7 @@
 package com.example.demo.security.jwt;
 
 import com.example.demo.auth.service.AuthService;
+import com.example.demo.security.user.CustomUserDetails;
 import com.example.demo.security.user.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -19,7 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Arrays;
 
-@Slf4j /// tự tạo biến log dùng để ghi log.info, log.warn...
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -27,24 +28,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
     private final CustomUserDetailsService customUserDetailsService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final TokenRefreshService tokenRefreshService;
 
-    /// quyết định req nào không cần chạy JWT filter, req nào phải chạy
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String uri = request.getServletPath();
-
-        /// filter sẽ không chạy tới accs url này
         return uri.startsWith("/api/jpa/auth/login")
                 || uri.startsWith("/api/jpa/auth/register")
+                || uri.startsWith("/api/jpa/auth/refresh")
                 || uri.startsWith("/v3/api-docs")
                 || uri.startsWith("/swagger-ui")
                 || uri.equals("/swagger-ui.html");
     }
 
-    /// mỗi req đi qua filter sẽ chạy vào
-    /// lấy token
-    /// kiểm tra -> hợp lệ thì cho vào security context
-    /// cho req đi tiếp
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
@@ -53,88 +49,90 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
 
         try {
-            // lấy jwt từ req
             String jwt = resolveToken(request);
 
-            //nêú req ko có token -> đi tiếp không xác thực ở đây
             if (!StringUtils.hasText(jwt)) {
+                tryAuthenticateFromRefreshToken(request, response);
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            /// kiểm tra token có bị blacklist không
-            /// nếu nằm trong black lít thì coi như ko dùng được nữa -> trả về 401
             if (tokenBlacklistService.isBlacklisted(jwt)) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json;charset=UTF-8");
                 response.getWriter().write("""
                     {
                       "code": "AU_401",
-                      "message": "Token đã bị logout",
+                      "message": "Token da bi logout",
                       "success": false
                     }
                     """);
                 return;
             }
 
-
-            /// kiểm tra token hợp lệ hay không
-            if (!jwtTokenProvider.validateToken(jwt)) {
-                log.warn("Invalid JWT token for uri={}", request.getRequestURI());
+            if (!jwtTokenProvider.isAccessToken(jwt)) {
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            /// lấy userId từ token
-            Long userId = jwtTokenProvider.getUserIdFromToken(jwt);
-
-            /// set điều kiện phải lấy được userId từ token và context chưa có ai đăng nhập
-            if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                /// gọi service để lấy thông tin user theo userId
-                var userDetails = customUserDetailsService.loadUserById(userId);
-
-                /// tạo object đại diện cho trạng thái user đã đăng nhập
-                UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails, /// thông tin user
-                                null, /// credentials ko cần password nữa vì đã xác thực qua token
-                                userDetails.getAuthorities() /// danh sách quyền user
-                        );
-
-                authentication.setDetails(
-                        /// gắn thêm thông tin chi tiết từu req vào authentication
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
-
-                /// báo cho spring security biết req đã xacs thực user là ai có quyền gì
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-
-                /// ghi log
-                log.info("Authenticated userId={}, authorities={}",
-                        userId,
-                        userDetails.getAuthorities());
+            if (jwtTokenProvider.isTokenExpired(jwt)) {
+                tryAuthenticateFromRefreshToken(request, response);
+                filterChain.doFilter(request, response);
+                return;
             }
+
+            if (!jwtTokenProvider.validateToken(jwt)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            authenticateByToken(jwt, request);
         } catch (Exception ex) {
             SecurityContextHolder.clearContext();
             log.error("JWT filter error at uri={}: {}", request.getRequestURI(), ex.getMessage(), ex);
         }
-        //cho req đi tiếp sau khi xử lý xong
+
         filterChain.doFilter(request, response);
     }
 
+    private void tryAuthenticateFromRefreshToken(HttpServletRequest request, HttpServletResponse response) {
+        String newAccessToken = tokenRefreshService.issueAccessTokenFromRefreshToken(request, response);
+        if (!StringUtils.hasText(newAccessToken)) {
+            return;
+        }
 
-    /// tìm token trong req
+        authenticateByToken(newAccessToken, request);
+        log.info("Access token refreshed for uri={}", request.getRequestURI());
+    }
+
+    private void authenticateByToken(String jwt, HttpServletRequest request) {
+        Long userId = jwtTokenProvider.getUserIdFromToken(jwt);
+
+        if (userId == null || SecurityContextHolder.getContext().getAuthentication() != null) {
+            return;
+        }
+
+        CustomUserDetails userDetails = customUserDetailsService.loadUserById(userId);
+
+        UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                );
+
+        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+
     private String resolveToken(HttpServletRequest request) {
-        /// đọc token từ header
         String bearerToken = request.getHeader("Authorization");
-        /// kiểm tra header có token không có chuẩn không sau đó cắt bỏ để lấy token chuẩn
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
             return bearerToken.substring(7);
         }
 
-        //nếu request không gửi cookie nào thì trả null
         Cookie[] cookies = request.getCookies();
-        if(cookies == null){
+        if (cookies == null) {
             return null;
         }
 
