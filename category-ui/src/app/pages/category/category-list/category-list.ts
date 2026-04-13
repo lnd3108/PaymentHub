@@ -330,7 +330,30 @@ export class CategoryList implements OnInit {
 
   //xuất excel
   exportExcel(): void {
-    this.categoryService.exportExcel(this.currentFilters).subscribe({
+    const filters = this.currentFilters;
+    const request: any = {};
+
+    if (filters.paramName.trim()) {
+      request.paramName = filters.paramName.trim();
+    }
+
+    if (filters.paramValue.trim()) {
+      request.paramValue = filters.paramValue.trim();
+    }
+
+    if (filters.paramType.trim()) {
+      request.paramType = filters.paramType.trim();
+    }
+
+    if (filters.status !== '') {
+      request.status = [Number(filters.status)];
+    }
+
+    if (filters.isActive !== '') {
+      request.isActive = [Number(filters.isActive)];
+    }
+
+    this.categoryService.exportExcel(request).subscribe({
       next: (blob: Blob) => {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -342,8 +365,11 @@ export class CategoryList implements OnInit {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
       },
-      error: () => {
+      error: (err) => {
+        console.error('Export Excel lỗi:', err);
+        console.error('Export error body:', err?.error);
         this.toastr.error('Xuất Excel thất bại', 'Lỗi');
       },
     });

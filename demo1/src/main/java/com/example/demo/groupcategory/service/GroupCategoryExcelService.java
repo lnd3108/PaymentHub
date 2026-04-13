@@ -60,28 +60,32 @@ public class GroupCategoryExcelService {
     private final DataFormatter dataFormatter = new DataFormatter(Locale.ROOT);
 
     public byte[] exportExcel(GroupCategorySearchReq req) {
-        Specification<GroupCategory> spec = req == null
-                ? Specification.allOf()
-                : GroupCategorySpecification.search(req);
+        try {
+            Specification<GroupCategory> spec = req == null
+                    ? Specification.allOf()
+                    : GroupCategorySpecification.search(req);
 
-        Sort sort = buildSort(req);
-        List<GroupCategory> rows = repository.findAll(spec, sort);
+            Sort sort = buildSort(req);
+            List<GroupCategory> rows = repository.findAll(spec, sort);
 
-        try (Workbook workbook = new XSSFWorkbook();
-             ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            try (Workbook workbook = new XSSFWorkbook();
+                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 
-            Sheet sheet = workbook.createSheet("group-categories");
-            writeHeader(sheet);
-            writeData(sheet, rows);
+                Sheet sheet = workbook.createSheet("group-categories");
+                writeHeader(sheet);
+                writeData(sheet, rows);
 
-            for (int i = 0; i < EXPORT_HEADERS.size(); i++) {
-                sheet.autoSizeColumn(i);
+                for (int i = 0; i < EXPORT_HEADERS.size(); i++) {
+                    sheet.autoSizeColumn(i);
+                }
+
+                workbook.write(outputStream);
+                return outputStream.toByteArray();
             }
-
-            workbook.write(outputStream);
-            return outputStream.toByteArray();
-        } catch (IOException ex) {
-            throw new BusinessException(ErrorCode.INTERNAL_ERROR, "Khong the tao file Excel");
+        } catch (BusinessException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new BusinessException(ErrorCode.GC_SEARCH_FAILED, "Xuất Excel thất bại: " + ex.getMessage());
         }
     }
 
@@ -152,10 +156,32 @@ public class GroupCategoryExcelService {
     }
 
     private Sort buildSort(GroupCategorySearchReq req) {
-        String sortBy = req != null && hasText(req.sortBy()) ? req.sortBy().trim() : "id";
-        Sort.Direction direction = req != null && "asc".equalsIgnoreCase(req.sortDir())
+        Set<String> allowedSortFields = Set.of(
+                "id",
+                "paramName",
+                "paramValue",
+                "paramType",
+                "description",
+                "componentCode",
+                "status",
+                "isActive",
+                "isDisplay",
+                "effectiveDate",
+                "endEffectiveDate"
+        );
+
+        String sortBy = (req != null && hasText(req.sortBy()))
+                ? req.sortBy().trim()
+                : "id";
+
+        if (!allowedSortFields.contains(sortBy)) {
+            sortBy = "id";
+        }
+
+        Sort.Direction direction = (req != null && "asc".equalsIgnoreCase(req.sortDir()))
                 ? Sort.Direction.ASC
                 : Sort.Direction.DESC;
+
         return Sort.by(direction, sortBy);
     }
 
