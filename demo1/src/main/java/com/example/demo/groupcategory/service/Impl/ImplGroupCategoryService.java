@@ -237,6 +237,10 @@ public class ImplGroupCategoryService implements GroupCategoryService {
         return processBatch(req, this::cancelApprove);
     }
 
+    public GroupCategoryBatchActionResponse deleteBatch(GroupCategoryBatchReq req) {
+        return processBatch(req, this::deleteOneForBatch);
+    }
+
     private GroupCategoryBatchActionResponse processBatch(
             GroupCategoryBatchReq req,
             BatchActionExecutor executor
@@ -277,6 +281,26 @@ public class ImplGroupCategoryService implements GroupCategoryService {
     @FunctionalInterface
     private interface BatchActionExecutor {
         GroupCategory execute(Long id);
+    }
+
+    private GroupCategory deleteOneForBatch(Long id) {
+        GroupCategory current = getRequired(id);
+        GroupCategory deletedSnapshot = new GroupCategory(
+                current.getId(),
+                current.getParamName(),
+                current.getParamValue(),
+                current.getParamType(),
+                current.getDescription(),
+                current.getComponentCode(),
+                current.getStatus(),
+                current.getIsActive(),
+                current.getIsDisplay(),
+                current.getNewData(),
+                current.getEffectiveDate(),
+                current.getEndEffectiveDate()
+        );
+        delete(id);
+        return deletedSnapshot;
     }
 
     public GroupCategory getCategoryById(Long id) {

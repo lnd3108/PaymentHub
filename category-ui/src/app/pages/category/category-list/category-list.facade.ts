@@ -23,18 +23,18 @@ export class CategoryListFacade {
   error = '';
 
   readonly statusOptions: { value: string; label: string }[] = [
-    { value: '', label: 'Tat ca' },
-    { value: '1', label: 'Tao moi' },
-    { value: '3', label: 'Cho phe duyet' },
-    { value: '4', label: 'Da phe duyet' },
-    { value: '5', label: 'Tu choi' },
-    { value: '7', label: 'Huy duyet' },
+    { value: '', label: 'Tất Cả' },
+    { value: '1', label: 'Tạo mới' },
+    { value: '3', label: 'Chờ phê duyệt' },
+    { value: '4', label: 'Đã phê duyệt' },
+    { value: '5', label: 'Từ chối' },
+    { value: '7', label: 'Hủy duyệt' },
   ];
 
   readonly activeOptions: { value: string; label: string }[] = [
-    { value: '', label: 'Tat ca' },
-    { value: '1', label: 'Hoat dong' },
-    { value: '0', label: 'Khong hoat dong' },
+    { value: '', label: 'Tất cả' },
+    { value: '1', label: 'Hoạt động' },
+    { value: '0', label: 'Không hoạt động' },
   ];
 
   currentFilter = CategoryFilter.empty();
@@ -95,6 +95,10 @@ export class CategoryListFacade {
       this.hasUniformSelectedStatus &&
       this.selectedItems.every((item) => CategoryEntity.fromModel(item).canCancelApprove())
     );
+  }
+
+  get canBulkDelete(): boolean {
+    return this.selectedCount > 0 && this.selectedItems.every((item) => CategoryEntity.fromModel(item).canDelete());
   }
 
   loadCategories(): void {

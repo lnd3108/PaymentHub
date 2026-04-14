@@ -67,7 +67,7 @@ export class CategoryDetailPage implements OnInit {
       error: (err) => {
         console.error(err);
         this.loading = false;
-        this.toastr.error('Khong tai duoc chi tiet', 'Loi');
+        this.toastr.error('Không tải được chi tiết', 'Lỗi');
       },
     });
   }
@@ -83,12 +83,12 @@ export class CategoryDetailPage implements OnInit {
 
     this.categoryService.submit(this.id).subscribe({
       next: () => {
-        this.toastr.success('Gui duyet thanh cong', 'Thanh cong');
+        this.toastr.success('Gửi duyệt thành công', 'Thành công');
         void this.router.navigate(['/categories']);
       },
       error: (err) => {
         console.error(err);
-        this.toastr.error('Gui duyet that bai', 'Loi');
+        this.toastr.error('Gửi duyệt thất bại', 'Lỗi');
       },
     });
   }
@@ -100,12 +100,12 @@ export class CategoryDetailPage implements OnInit {
 
     this.categoryService.approve(this.id).subscribe({
       next: () => {
-        this.toastr.success('Phe duyet thanh cong', 'Thanh cong');
+        this.toastr.success('Phê duyệt thành công', 'Thành công');
         void this.router.navigate(['/categories']);
       },
       error: (err) => {
         console.error('Approve error:', err);
-        this.toastr.error(err?.error?.message || 'Phe duyet that bai', 'Loi');
+        this.toastr.error(err?.error?.message || 'Phê duyệt thất bại', 'Lỗi');
       },
     });
   }
@@ -131,7 +131,7 @@ export class CategoryDetailPage implements OnInit {
 
     const reason = this.rejectReason.trim();
     if (!reason) {
-      this.toastr.warning('Vui long nhap ly do tu choi', 'Canh bao');
+      this.toastr.warning('Vui lòng nhập lý do từ chối', 'Cảnh báo');
       return;
     }
 
@@ -142,13 +142,13 @@ export class CategoryDetailPage implements OnInit {
         this.rejecting = false;
         this.showRejectModal = false;
         this.rejectReason = '';
-        this.toastr.success('Tu choi thanh cong', 'Thanh cong');
+        this.toastr.success('Từ chối thành công', 'Thành công');
         void this.router.navigate(['/categories']);
       },
       error: (err) => {
         this.rejecting = false;
         console.error(err);
-        this.toastr.error(err?.error?.message || 'Tu choi that bai', 'Loi');
+        this.toastr.error(err?.error?.message || 'Từ chối thất bại', 'Lỗi');
       },
     });
   }
@@ -160,12 +160,12 @@ export class CategoryDetailPage implements OnInit {
 
     this.categoryService.cancelApprove(this.id).subscribe({
       next: () => {
-        this.toastr.success('Huy duyet thanh cong', 'Thanh cong');
+        this.toastr.success('Hủy duyệt thành công', 'Thành công');
         void this.router.navigate(['/categories']);
       },
       error: (err) => {
         console.error(err);
-        this.toastr.error('Huy duyet that bai', 'Loi');
+        this.toastr.error('Hủy duyệt thất bại', 'Lỗi');
       },
     });
   }
@@ -183,7 +183,7 @@ export class CategoryDetailPage implements OnInit {
       return `4 - ${CategoryStatusPolicy.label(4)}`;
     }
 
-    return 'Chi tiet ban ghi';
+    return 'Chi tiết bản ghi';
   }
 
   get badgeClass(): string {
@@ -204,25 +204,25 @@ export class CategoryDetailPage implements OnInit {
 
   get oldDataEntries(): [string, string][] {
     return [
-      ['Ten thanh phan', this.oldData?.paramName || '-'],
-      ['Gia tri thanh phan', this.oldData?.paramValue || '-'],
-      ['Danh muc theo nhom', this.oldData?.paramType || '-'],
-      ['Cau phan xu ly', this.oldData?.componentCode || '-'],
-      ['Ngay hieu luc', this.oldData?.effectiveDate || '-'],
-      ['Ngay het hieu luc', this.oldData?.endEffectiveDate || '-'],
-      ['Mo ta', this.oldData?.description || '-'],
+      ['Tên thành phần', this.oldData?.paramName || '-'],
+      ['Giá trị thành phần', this.oldData?.paramValue || '-'],
+      ['Danh mục theo nhóm', this.oldData?.paramType || '-'],
+      ['Cấu phần xử lý', this.oldData?.componentCode || '-'],
+      ['Ngày hiệu lực', this.oldData?.effectiveDate || '-'],
+      ['Ngày hết hiệu lực', this.oldData?.endEffectiveDate || '-'],
+      ['Mô tả', this.oldData?.description || '-'],
     ];
   }
 
   get newDataEntries(): [string, string][] {
     return [
-      ['Ten thanh phan', this.newData?.paramName || '-'],
-      ['Gia tri thanh phan', this.newData?.paramValue || '-'],
-      ['Danh muc theo nhom', this.newData?.paramType || '-'],
-      ['Cau phan xu ly', this.newData?.componentCode || '-'],
-      ['Ngay hieu luc', this.newData?.effectiveDate || '-'],
-      ['Ngay het hieu luc', this.newData?.endEffectiveDate || '-'],
-      ['Mo ta', this.newData?.description || '-'],
+      ['Tên thành phần', this.newData?.paramName || '-'],
+      ['Giá trị thành phần', this.newData?.paramValue || '-'],
+      ['Danh mục theo nhóm', this.newData?.paramType || '-'],
+      ['Cấu phần xử lý', this.newData?.componentCode || '-'],
+      ['Ngày hiệu lực', this.newData?.effectiveDate || '-'],
+      ['Ngày hết hiệu lực', this.newData?.endEffectiveDate || '-'],
+      ['Mô tả', this.newData?.description || '-'],
     ];
   }
 

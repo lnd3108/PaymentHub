@@ -100,6 +100,14 @@ public class GroupCategoryController {
         return ApiResponse.success("Delete success", "Deleted successfully");
     }
 
+    @PreAuthorize("hasAuthority('GC_DELETE') or hasAuthority('GC_ADMIN')")
+    @DeleteMapping("/batch")
+    public ApiResponse<GroupCategoryBatchActionResponse> deleteBatch(
+            @Valid @RequestBody GroupCategoryBatchReq req
+    ) {
+        return ApiResponse.success("Delete batch success", service.deleteBatch(req));
+    }
+
     @PreAuthorize("hasAuthority('GC_SEARCH') or hasAuthority('GC_ADMIN')")
     @PostMapping("/search")
     public ApiResponse<PageResponse<GroupCategoryResponse>> search(@RequestBody GroupCategorySearchReq req,

@@ -81,6 +81,14 @@ export class CategoryService {
       .pipe(map((res) => res.data));
   }
 
+  deleteBatch(ids: number[]): Observable<CategoryBatchActionResponse> {
+    return this.http
+      .delete<ApiResponse<CategoryBatchActionResponse>>(`${this.apiUrl}/batch`, {
+        body: { ids },
+      })
+      .pipe(map((res) => res.data));
+  }
+
   search(data: CategorySearchRequest, page = 0, size = 20): Observable<CategoryPageResponse> {
     const params = new HttpParams()
       .set('page', String(page))

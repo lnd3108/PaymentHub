@@ -23,5 +23,6 @@ public interface GroupCategoryService {
     GroupCategoryBatchActionResponse submitBatch(GroupCategoryBatchReq req);
     GroupCategoryBatchActionResponse approveBatch(GroupCategoryBatchReq req);
     GroupCategoryBatchActionResponse batchCancelApprove(GroupCategoryBatchReq req);
+    GroupCategoryBatchActionResponse deleteBatch(GroupCategoryBatchReq req);
     GroupCategory getCategoryById(Long id);
 }

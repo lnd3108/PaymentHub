@@ -7,11 +7,11 @@ import Swal from 'sweetalert2';
 import { CategoryEntity } from '../../../domain/category/category.entity';
 import { CategoryFilterForm } from '../../../domain/category/category-filter';
 import { Category } from '../../../models/category.models';
-import { CategoryPermissionService, CategoryAction } from '../../../service/category-permission.service';
 import {
-  CategoryBatchActionResponse,
-  CategoryService,
-} from '../../../service/category.service';
+  CategoryPermissionService,
+  CategoryAction,
+} from '../../../service/category-permission.service';
+import { CategoryBatchActionResponse, CategoryService } from '../../../service/category.service';
 import { CategoryFiltersComponent } from '../components/category-filters/category-filters';
 import { CategoryTableComponent } from '../components/category-table/category-table';
 import { CategoryListFacade } from './category-list.facade';
@@ -66,14 +66,19 @@ export class CategoryList implements OnInit {
 
     if (!this.facade.canBulkSubmit) {
       this.toastr.warning(
-        'Chi duoc gui duyet nhieu ban ghi khi cac ban ghi cung trang thai hop le.',
-        'Canh bao',
+        'Chỉ được gửi duyệt nhiều bản ghi khi các bản ghi cùng trạng thái hợp lệ.',
+        'Cảnh báo',
       );
       return;
     }
 
     const ids = this.facade.selectedItems.map((item) => item.id!).filter(Boolean);
-    this.executeBatchAction(ids, () => this.categoryService.submitBatch(ids), 'Xac nhan gui duyet', 'Gui duyet');
+    this.executeBatchAction(
+      ids,
+      () => this.categoryService.submitBatch(ids),
+      'Xác nhận gửi duyệt',
+      'Gửi duyệt',
+    );
   }
 
   bulkApproveSelected(): void {
@@ -83,14 +88,19 @@ export class CategoryList implements OnInit {
 
     if (!this.facade.canBulkApprove) {
       this.toastr.warning(
-        'Chi duoc phe duyet nhieu ban ghi khi tat ca dang o trang thai cho phe duyet.',
-        'Canh bao',
+        'Chỉ được phê duyệt nhiều bản ghi khi tất cả đang ở trạng thái chờ phê duyệt.',
+        'Cảnh báo',
       );
       return;
     }
 
     const ids = this.facade.selectedItems.map((item) => item.id!).filter(Boolean);
-    this.executeBatchAction(ids, () => this.categoryService.approveBatch(ids), 'Xac nhan phe duyet', 'Phe duyet');
+    this.executeBatchAction(
+      ids,
+      () => this.categoryService.approveBatch(ids),
+      'Xác nhận phê duyệt',
+      'Phê duyệt',
+    );
   }
 
   bulkCancelApproveSelected(): void {
@@ -100,8 +110,8 @@ export class CategoryList implements OnInit {
 
     if (!this.facade.canBulkCancelApprove) {
       this.toastr.warning(
-        'Chi duoc huy duyet nhieu ban ghi khi tat ca dang o trang thai da phe duyet.',
-        'Canh bao',
+        'Chỉ được hủy duyệt nhiều bản ghi khi tất cả đang ở trạng thái đã phê duyệt.',
+        'Cảnh báo',
       );
       return;
     }
@@ -110,9 +120,66 @@ export class CategoryList implements OnInit {
     this.executeBatchAction(
       ids,
       () => this.categoryService.cancelApproveBatch(ids),
-      'Xac nhan huy duyet',
-      'Huy duyet',
+      'Xác nhận hủy duyệt',
+      'Hủy duyệt',
     );
+  }
+
+  bulkDeleteSelected(): void {
+    if (!this.ensurePermission('delete')) {
+      return;
+    }
+
+    if (!this.facade.canBulkDelete) {
+      this.toastr.warning(
+        'Chỉ được xóa nhiều bản ghi hợp lệ, không bao gồm bản ghi đã duyệt.',
+        'Cảnh báo',
+      );
+      return;
+    }
+
+    const ids = this.facade.selectedItems.map((item) => item.id!).filter(Boolean);
+
+    void Swal.fire({
+      title: 'Xác nhận xóa hàng loạt',
+      text: `Bản ghi đã chọn sẽ bị xóa khỏi hệ thống (${ids.length} bản ghi).`,
+      icon: 'warning',
+      showCancelButton: true,
+      cancelButtonText: 'Hủy',
+      confirmButtonText: 'Xóa',
+      reverseButtons: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+    }).then((result) => {
+      if (!result.isConfirmed) {
+        return;
+      }
+
+      this.facade.loading = true;
+
+      this.categoryService.deleteBatch(ids).subscribe({
+        next: (response: CategoryBatchActionResponse) => {
+          this.facade.loading = false;
+          this.facade.loadCategories();
+
+          if ((response.failedCount ?? 0) > 0) {
+            const firstError = response.failed?.[0]?.message || 'Xóa có bản ghi thất bại';
+            this.toastr.warning(
+              `Xóa thành công ${response.successCount}/${response.totalRequested}. ${firstError}`,
+              'Cảnh báo',
+            );
+            return;
+          }
+
+          this.toastr.success(`Xóa thành công ${response.successCount} bản ghi`, 'Thành công');
+        },
+        error: (err) => {
+          this.facade.loading = false;
+          console.error(err);
+          this.toastr.error(err?.error?.message || 'Xóa hàng loạt thất bại', 'Lỗi');
+        },
+      });
+    });
   }
 
   goCreate(): void {
@@ -162,17 +229,17 @@ export class CategoryList implements OnInit {
 
     const id = item.id;
     if (id == null) {
-      this.toastr.error('Khong tim thay id ban ghi', 'Loi');
+      this.toastr.error('Không tìm thấy ID bản ghi', 'Lỗi');
       return;
     }
 
     void Swal.fire({
-      title: 'Xac nhan huy duyet',
-      text: 'Ban ghi nay se chuyen sang trang thai huy duyet.',
+      title: 'Xác nhận hủy duyệt',
+      text: 'Bản ghi này sẽ chuyển sang trạng thái hủy duyệt.',
       icon: 'warning',
       showCancelButton: true,
-      cancelButtonText: 'Huy',
-      confirmButtonText: 'Xac nhan',
+      cancelButtonText: 'Hủy',
+      confirmButtonText: 'Xác nhận',
       reverseButtons: true,
       confirmButtonColor: '#007c7a',
       cancelButtonColor: '#6b7280',
@@ -183,12 +250,12 @@ export class CategoryList implements OnInit {
 
       this.categoryService.cancelApprove(id).subscribe({
         next: () => {
-          this.toastr.success('Huy duyet thanh cong', 'Thanh cong');
+          this.toastr.success('Hủy duyệt thành công', 'Thành công');
           this.facade.loadCategories();
         },
         error: (err) => {
           console.error(err);
-          this.toastr.error(err?.error?.message || 'Huy duyet that bai', 'Loi');
+          this.toastr.error(err?.error?.message || 'Hủy duyệt thất bại', 'Lỗi');
         },
       });
     });
@@ -201,22 +268,22 @@ export class CategoryList implements OnInit {
 
     const id = item.id;
     if (id == null) {
-      this.toastr.error('Khong tim thay id ban ghi', 'Loi');
+      this.toastr.error('Không tìm thấy ID bản ghi', 'Lỗi');
       return;
     }
 
     if (!CategoryEntity.fromModel(item).canDelete()) {
-      this.toastr.warning('Ban ghi da duyet khong cho phep xoa', 'Canh bao');
+      this.toastr.warning('Bản ghi đã duyệt không cho phép xóa', 'Cảnh báo');
       return;
     }
 
     void Swal.fire({
-      title: 'Xac nhan xoa',
-      text: 'Ban ghi nay se bi xoa khoi he thong.',
+      title: 'Xác nhận xóa',
+      text: 'Bản ghi này sẽ bị xóa khỏi hệ thống.',
       icon: 'warning',
       showCancelButton: true,
-      cancelButtonText: 'Huy',
-      confirmButtonText: 'Xoa',
+      cancelButtonText: 'Hủy',
+      confirmButtonText: 'Xóa',
       reverseButtons: true,
       confirmButtonColor: '#dc2626',
       cancelButtonColor: '#6b7280',
@@ -227,12 +294,12 @@ export class CategoryList implements OnInit {
 
       this.categoryService.delete(id).subscribe({
         next: () => {
-          this.toastr.success('Xoa thanh cong', 'Thanh cong');
+          this.toastr.success('Xóa thành công', 'Thành công');
           this.facade.loadCategories();
         },
         error: (err) => {
           console.error(err);
-          this.toastr.error(err?.error?.message || 'Xoa that bai', 'Loi');
+          this.toastr.error(err?.error?.message || 'Xóa thất bại', 'Lỗi');
         },
       });
     });
@@ -255,8 +322,8 @@ export class CategoryList implements OnInit {
         window.URL.revokeObjectURL(url);
       },
       error: (err) => {
-        console.error('Export Excel loi:', err);
-        this.toastr.error('Xuat Excel that bai', 'Loi');
+        console.error('Export Excel lỗi:', err);
+        this.toastr.error('Xuất Excel thất bại', 'Lỗi');
       },
     });
   }
@@ -272,18 +339,18 @@ export class CategoryList implements OnInit {
     }
 
     if (!this.facade.selectedFile) {
-      this.toastr.warning('Chon file truoc');
+      this.toastr.warning('Chọn file trước');
       return;
     }
 
     this.categoryService.importExcel(this.facade.selectedFile, false).subscribe({
       next: () => {
-        this.toastr.success('Import thanh cong');
+        this.toastr.success('Import thành công');
         this.facade.clearSelectedFile();
         this.facade.loadCategories();
       },
       error: () => {
-        this.toastr.error('Import that bai');
+        this.toastr.error('Import thất bại');
       },
     });
   }
@@ -304,11 +371,11 @@ export class CategoryList implements OnInit {
   ): void {
     void Swal.fire({
       title,
-      text: `Ban dang thao tac ${ids.length} ban ghi.`,
+      text: `Bạn đang thao tác ${ids.length} bản ghi.`,
       icon: 'warning',
       showCancelButton: true,
-      cancelButtonText: 'Huy',
-      confirmButtonText: 'Xac nhan',
+      cancelButtonText: 'Hủy',
+      confirmButtonText: 'Xác nhận',
       reverseButtons: true,
       confirmButtonColor: '#007c7a',
       cancelButtonColor: '#6b7280',
@@ -325,20 +392,24 @@ export class CategoryList implements OnInit {
           this.facade.applyBatchResponse(response);
 
           if ((response.failedCount ?? 0) > 0) {
-            const firstError = response.failed?.[0]?.message || `${actionLabel} co ban ghi that bai`;
+            const firstError =
+              response.failed?.[0]?.message || `${actionLabel} có bản ghi thất bại`;
             this.toastr.warning(
-              `${actionLabel} thanh cong ${response.successCount}/${response.totalRequested}. ${firstError}`,
-              'Canh bao',
+              `${actionLabel} thành công ${response.successCount}/${response.totalRequested}. ${firstError}`,
+              'Cảnh báo',
             );
             return;
           }
 
-          this.toastr.success(`${actionLabel} thanh cong ${response.successCount} ban ghi`, 'Thanh cong');
+          this.toastr.success(
+            `${actionLabel} thành công ${response.successCount} bản ghi`,
+            'Thành công',
+          );
         },
         error: (err) => {
           this.facade.loading = false;
           console.error(err);
-          this.toastr.error(err?.error?.message || `${actionLabel} that bai`, 'Loi');
+          this.toastr.error(err?.error?.message || `${actionLabel} thất bại`, 'Lỗi');
         },
       });
     });
@@ -350,11 +421,11 @@ export class CategoryList implements OnInit {
     }
 
     const actionLabel = this.permissionService.getActionLabel(action);
-    console.error(`[Category] Khong du quyen de ${actionLabel}.`, {
+    console.error(`[Category] Không đủ quyền để ${actionLabel}.`, {
       action,
       authorities: this.permissionService.getGrantedAuthorities(),
     });
-    this.toastr.error(`Khong du quyen de ${actionLabel}`, 'Loi');
+    this.toastr.error(`Không đủ quyền để ${actionLabel}`, 'Lỗi');
     return false;
   }
 }

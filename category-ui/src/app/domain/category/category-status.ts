@@ -29,17 +29,17 @@ export class CategoryStatusPolicy {
   static label(status: number | null | undefined): string {
     switch (status) {
       case CategoryStatus.New:
-        return 'Tao moi';
+        return 'Tạo mới';
       case CategoryStatus.PendingApproval:
-        return 'Cho phe duyet';
+        return 'Chờ phê duyệt';
       case CategoryStatus.Approved:
-        return 'Da phe duyet';
+        return 'Đã phê duyệt';
       case CategoryStatus.Rejected:
-        return 'Tu choi';
+        return 'Từ chối';
       case CategoryStatus.CancelApproved:
-        return 'Huy duyet';
+        return 'Hủy duyệt';
       default:
-        return 'Khong xac dinh';
+        return 'Không xác định';
     }
   }
 
