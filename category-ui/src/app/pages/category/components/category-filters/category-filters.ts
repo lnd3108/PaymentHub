@@ -1,7 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  HostListener,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CategoryFilterForm } from '../../../../domain/category/category-filter';
+
+type FilterOption = { value: string | number; label: string };
 
 @Component({
   selector: 'app-category-filters',
@@ -11,14 +22,14 @@ import { CategoryFilterForm } from '../../../../domain/category/category-filter'
   styleUrl: './category-filters.css',
 })
 export class CategoryFiltersComponent implements OnChanges {
-  @Input() statusOptions: { value: string; label: string }[] = [];
-  @Input() activeOptions: { value: string; label: string }[] = [];
+  @Input() statusOptions: FilterOption[] = [];
+  @Input() activeOptions: FilterOption[] = [];
   @Input() currentFilters: CategoryFilterForm = {
     paramName: '',
     paramValue: '',
     paramType: '',
-    status: '',
-    isActive: '',
+    status: [],
+    isActive: [],
   };
 
   @Output() search = new EventEmitter<CategoryFilterForm>();
@@ -28,9 +39,14 @@ export class CategoryFiltersComponent implements OnChanges {
     paramName: '',
     paramValue: '',
     paramType: '',
-    status: '',
-    isActive: '',
+    status: [],
+    isActive: [],
   };
+
+  statusDropdownOpen = false;
+  activeDropdownOpen = false;
+
+  constructor(private readonly elementRef: ElementRef<HTMLElement>) {}
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['currentFilters']) {
@@ -38,14 +54,87 @@ export class CategoryFiltersComponent implements OnChanges {
         paramName: this.currentFilters.paramName ?? '',
         paramValue: this.currentFilters.paramValue ?? '',
         paramType: this.currentFilters.paramType ?? '',
-        status: this.currentFilters.status ?? '',
-        isActive: this.currentFilters.isActive ?? '',
+        status: (this.currentFilters.status ?? []).map(String),
+        isActive: (this.currentFilters.isActive ?? []).map(String),
       };
     }
   }
 
+  toggleStatusDropdown(): void {
+    this.statusDropdownOpen = !this.statusDropdownOpen;
+    if (this.statusDropdownOpen) {
+      this.activeDropdownOpen = false;
+    }
+  }
+
+  toggleActiveDropdown(): void {
+    this.activeDropdownOpen = !this.activeDropdownOpen;
+    if (this.activeDropdownOpen) {
+      this.statusDropdownOpen = false;
+    }
+  }
+
+  closeDropdowns(): void {
+    this.statusDropdownOpen = false;
+    this.activeDropdownOpen = false;
+  }
+
+  onToggleMultiValue(field: 'status' | 'isActive', value: string | number, checked: boolean): void {
+    const normalizedValue = String(value);
+    const currentValues = this.filters[field].map(String);
+
+    if (checked) {
+      if (!currentValues.includes(normalizedValue)) {
+        this.filters[field] = [...currentValues, normalizedValue];
+      }
+      return;
+    }
+
+    this.filters[field] = currentValues.filter((item) => item !== normalizedValue);
+  }
+
+  isChecked(field: 'status' | 'isActive', value: string | number): boolean {
+    return this.filters[field].map(String).includes(String(value));
+  }
+
+  removeSelectedValue(field: 'status' | 'isActive', value: string | number): void {
+    const normalizedValue = String(value);
+    this.filters[field] = this.filters[field]
+      .map(String)
+      .filter((item) => item !== normalizedValue);
+  }
+
+  getSelectedOptions(field: 'status' | 'isActive', options: FilterOption[]): FilterOption[] {
+    const values = this.filters[field].map(String);
+    return options.filter(
+      (option) => String(option.value) !== '' && values.includes(String(option.value)),
+    );
+  }
+
+  hasSelectedValues(field: 'status' | 'isActive'): boolean {
+    return this.filters[field].length > 0;
+  }
+
+  getSelectedLabels(field: 'status' | 'isActive', options: FilterOption[]): string {
+    const values = this.filters[field].map(String);
+
+    if (values.length === 0) {
+      return '';
+    }
+
+    return options
+      .filter((option) => String(option.value) !== '' && values.includes(String(option.value)))
+      .map((option) => option.label)
+      .join(', ');
+  }
+
   onSearch(): void {
-    this.search.emit({ ...this.filters });
+    this.search.emit({
+      ...this.filters,
+      status: this.filters.status.map(String),
+      isActive: this.filters.isActive.map(String),
+    });
+    this.closeDropdowns();
   }
 
   onReset(): void {
@@ -53,9 +142,17 @@ export class CategoryFiltersComponent implements OnChanges {
       paramName: '',
       paramValue: '',
       paramType: '',
-      status: '',
-      isActive: '',
+      status: [],
+      isActive: [],
     };
+    this.closeDropdowns();
     this.reset.emit();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.elementRef.nativeElement.contains(event.target as Node)) {
+      this.closeDropdowns();
+    }
   }
 }

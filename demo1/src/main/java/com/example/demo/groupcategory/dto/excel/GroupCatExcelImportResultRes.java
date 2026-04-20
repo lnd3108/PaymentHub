@@ -2,10 +2,10 @@ package com.example.demo.groupcategory.dto.excel;
 
 import java.util.List;
 
-public record GroupCatExcelImportResult(
+public record GroupCatExcelImportResultRes(
         int totalRows,
         int successRows,
         int failedRows,
-        List<GroupCatExcelImportError> errors
+        List<GroupCatExcelImportErrorRes> errors
 ) {
 }

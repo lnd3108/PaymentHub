@@ -5,13 +5,11 @@ export interface CategoryFilterForm {
   paramName: string;
   paramValue: string;
   paramType: string;
-  status: string;
-  isActive: string;
+  status: string[];
+  isActive: string[];
 }
 
-export type CategorySearchRequest = Partial<
-  Omit<CategorySearch, 'status' | 'isActive'>
-> & {
+export type CategorySearchRequest = Partial<Omit<CategorySearch, 'status' | 'isActive'>> & {
   status?: number[];
   isActive?: number[];
 };
@@ -21,8 +19,8 @@ export class CategoryFilter {
     readonly paramName = '',
     readonly paramValue = '',
     readonly paramType = '',
-    readonly status = '',
-    readonly isActive = '',
+    readonly status: string[] = [],
+    readonly isActive: string[] = [],
   ) {}
 
   static empty(): CategoryFilter {
@@ -34,8 +32,8 @@ export class CategoryFilter {
       form?.paramName ?? '',
       form?.paramValue ?? '',
       form?.paramType ?? '',
-      form?.status ?? '',
-      form?.isActive ?? '',
+      [...(form?.status ?? [])],
+      [...(form?.isActive ?? [])],
     );
   }
 
@@ -44,8 +42,8 @@ export class CategoryFilter {
       paramName: this.paramName,
       paramValue: this.paramValue,
       paramType: this.paramType,
-      status: this.status,
-      isActive: this.isActive,
+      status: [...this.status],
+      isActive: [...this.isActive],
     };
   }
 
@@ -64,23 +62,23 @@ export class CategoryFilter {
       request.paramType = this.paramType.trim();
     }
 
-    if (this.status !== '') {
-      request.status = [Number(this.status)];
+    if (this.status.length > 0) {
+      request.status = this.status.map(Number);
     }
 
-    if (this.isActive !== '') {
-      request.isActive = [Number(this.isActive)];
+    if (this.isActive.length > 0) {
+      request.isActive = this.isActive.map(Number);
     }
 
     return request;
   }
 
   matches(category: Category): boolean {
-    if (this.status !== '' && category.status !== Number(this.status)) {
+    if (this.status.length > 0 && !this.status.map(Number).includes(category.status ?? -1)) {
       return false;
     }
 
-    if (this.isActive !== '' && category.isActive !== Number(this.isActive)) {
+    if (this.isActive.length > 0 && !this.isActive.map(Number).includes(category.isActive ?? -1)) {
       return false;
     }
 

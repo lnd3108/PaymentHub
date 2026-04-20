@@ -1,7 +1,11 @@
 <section class="rounded-2xl bg-white p-5 shadow-sm">
   <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-5">
+
+    <!-- Tên thành phần -->
     <div>
-      <label class="mb-2 block text-sm font-medium text-gray-700">Tên thành phần</label>
+      <label class="mb-2 block text-sm font-medium text-gray-700">
+        Tên thành phần
+      </label>
       <input
         type="text"
         [(ngModel)]="filters.paramName"
@@ -10,8 +14,11 @@
       />
     </div>
 
+    <!-- Giá trị thành phần -->
     <div>
-      <label class="mb-2 block text-sm font-medium text-gray-700">Giá trị thành phần</label>
+      <label class="mb-2 block text-sm font-medium text-gray-700">
+        Giá trị thành phần
+      </label>
       <input
         type="text"
         [(ngModel)]="filters.paramValue"
@@ -20,8 +27,11 @@
       />
     </div>
 
+    <!-- Danh mục -->
     <div>
-      <label class="mb-2 block text-sm font-medium text-gray-700">Danh mục theo nhóm</label>
+      <label class="mb-2 block text-sm font-medium text-gray-700">
+        Danh mục theo nhóm
+      </label>
       <input
         type="text"
         [(ngModel)]="filters.paramType"
@@ -30,31 +40,86 @@
       />
     </div>
 
-    <div>
-      <label class="mb-2 block text-sm font-medium text-gray-700">Trạng thái tham số</label>
-      <select
-        [(ngModel)]="filters.status"
-        class="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-teal-600"
-      >
-        @for (option of statusOptions; track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
-        }
-      </select>
+    <!-- Trạng thái tham số -->
+    <div class="relative">
+      <label class="mb-2 block text-sm font-medium text-gray-700">
+        Trạng thái tham số
+      </label>
+
+      <div class="relative" (click)="toggleStatusDropdown()">
+        <input
+          type="text"
+          [value]="getSelectedLabels('status', statusOptions)"
+          readonly
+          placeholder="Chọn trạng thái tham số"
+          class="w-full cursor-pointer rounded-xl border border-gray-200 px-4 py-3 pr-10 outline-none focus:border-teal-600"
+        />
+        <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs">
+      &#9662;
+    </span>
+      </div>
+
+      @if (statusDropdownOpen) {
+        <div class="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
+          @for (option of statusOptions; track option.value) {
+            @if (option.value !== '') {
+              <label class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-50">
+                <input
+                  type="checkbox"
+                  class="size-4"
+                  [value]="option.value"
+                  [checked]="isChecked('status', option.value)"
+                  (change)="onToggleMultiValue('status', option.value, $any($event.target).checked)"
+                />
+                <span class="text-sm text-gray-700">{{ option.label }}</span>
+              </label>
+            }
+          }
+        </div>
+      }
     </div>
 
-    <div>
-      <label class="mb-2 block text-sm font-medium text-gray-700">Trạng thái hoạt động</label>
-      <select
-        [(ngModel)]="filters.isActive"
-        class="w-full rounded-xl border border-gray-200 px-4 py-3 outline-none focus:border-teal-600"
-      >
-        @for (option of activeOptions; track option.value) {
-          <option [value]="option.value">{{ option.label }}</option>
-        }
-      </select>
+    <!-- Trạng thái hoạt động -->
+    <div class="relative">
+      <label class="mb-2 block text-sm font-medium text-gray-700">
+        Trạng thái hoạt động
+      </label>
+
+      <div class="relative" (click)="toggleActiveDropdown()">
+        <input
+          type="text"
+          [value]="getSelectedLabels('isActive', activeOptions)"
+          readonly
+          placeholder="Chọn trạng thái hoạt động"
+          class="w-full cursor-pointer rounded-xl border border-gray-200 px-4 py-3 pr-10 outline-none focus:border-teal-600"
+        />
+        <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs">
+      &#9662;
+    </span>
+      </div>
+
+      @if (activeDropdownOpen) {
+        <div class="absolute z-20 mt-2 max-h-64 w-full overflow-auto rounded-xl border border-gray-200 bg-white p-2 shadow-lg">
+          @for (option of activeOptions; track option.value) {
+            @if (option.value !== '') {
+              <label class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-50">
+                <input
+                  type="checkbox"
+                  class="size-4"
+                  [value]="option.value"
+                  [checked]="isChecked('isActive', option.value)"
+                  (change)="onToggleMultiValue('isActive', option.value, $any($event.target).checked)"
+                />
+                <span class="text-sm text-gray-700">{{ option.label }}</span>
+              </label>
+            }
+          }
+        </div>
+      }
     </div>
   </div>
 
+  <!-- Actions -->
   <div class="mt-5 flex flex-wrap items-center justify-end gap-3">
     <button
       type="button"

@@ -18,5 +18,4 @@ public class AcountRoleId implements Serializable {
 
     @Column(name = "ROLE_ID")
     private Long roleId;
-
 }

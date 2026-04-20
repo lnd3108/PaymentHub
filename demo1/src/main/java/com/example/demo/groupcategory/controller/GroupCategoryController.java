@@ -7,7 +7,7 @@ import com.example.demo.groupcategory.dto.request.GroupCategoryBatchReq;
 import com.example.demo.groupcategory.dto.request.GroupCategoryRejectReq;
 import com.example.demo.groupcategory.dto.request.GroupCategorySearchReq;
 import com.example.demo.groupcategory.dto.request.GroupCategoryUpsertReq;
-import com.example.demo.groupcategory.dto.excel.GroupCatExcelImportResult;
+import com.example.demo.groupcategory.dto.excel.GroupCatExcelImportResultRes;
 import com.example.demo.groupcategory.dto.response.GroupCategoryBatchActionResponse;
 import com.example.demo.groupcategory.dto.response.GroupCategoryResponse;
 import com.example.demo.groupcategory.service.GroupCategoryExcelService;
@@ -130,7 +130,7 @@ public class GroupCategoryController {
 
     @PreAuthorize("hasAuthority('GC_CREATE') or hasAuthority('GC_SUBMIT') or hasAuthority('GC_ADMIN')")
     @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiResponse<GroupCatExcelImportResult> importExcel(
+    public ApiResponse<GroupCatExcelImportResultRes> importExcel(
             @RequestParam("file") MultipartFile file,
             @RequestParam(defaultValue = "false") boolean submitAfterImport
     ) {

@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Repository
-// Logic xử lý toàn bộ nằm trong đảm baor tính toàn vẹn dữ liệu cho một luồng xử lý
+// Logic xử lý nằm trong đảm baor tính toàn vẹn dữ liệu cho một luồng xử lý
 @Transactional
 public class GroupCategoryProcedureRepo {
 
@@ -63,17 +63,17 @@ public class GroupCategoryProcedureRepo {
 
             //đọc output
             Object outId = sp.getOutputParameterValue("P_ID");
+            //trả ra id
             return outId == null ? null : ((Number) outId).longValue();
         } catch (Exception e) {
             throw mapProcedureException(e, ErrorCode.GC_CREATE_FAILED);
         }
     }
 
-    //lấy danh sách group phân trang
+    //tắt cảnh báo khi ép kiểu generic mà compiler không kiểm tra chắc chắn được
     @SuppressWarnings("unchecked")
     public PageResponse<GroupCategory> getAll(int page, int size) {
         try {
-            //chặn input xấu nhưu giá trị âm và giá trị quá lơn
             int safePage = Math.max(page, 0);
             int safeSize = size <= 0 ? 10 : Math.min(size, 100);
 
@@ -95,10 +95,8 @@ public class GroupCategoryProcedureRepo {
                 result.add(mapRow(row));
             }
 
-            //lấy tổng số bản ghi phục vụ pagination
             long total = ((Number) sp.getOutputParameterValue("P_TOTAL")).longValue();
 
-            //đóng gói kết quả theo format trả ra API
             return PageResponse.fromNative(result, safePage, safeSize, total, "effectiveDate", "desc", item -> item);
         } catch (Exception e) {
             throw mapProcedureException(e, ErrorCode.GC_GET_ALL_FAILED);

@@ -39,25 +39,18 @@ public class ImplGroupCategoryService implements GroupCategoryService {
     private final GroupCategoryNewDataHelper newDataHelper;
 
     public GroupCategory create(GroupCategoryUpsertReq req) {
-        //kiểm trả các trường gửi lên có trống hay không
+
         validator.validateRequired(req);
-        //chuẩn hóa các field khóa để tránh trùng do khác biệt khoảng trắng
         validator.validateDuplicateForUpsert(req, null);
 
-        //tạo entity mới để copy bản ghi từ nguồn
         GroupCategory entity = new GroupCategory();
-        //gắn trường đã được chuẩn hóa vào entity
+        //gắn trường đã chuẩn hóa vào new
         mapper.applyBaseFields(entity, req);
 
-        //Set status = 1 - Tạo Mới
         entity.markAsDraft();
-        //set is active về trạng thái đang hoạt động
         entity.applyDefaultFlags(req.isActive(), req.isDisplay());
         //để display về trạng thái chưa duyệt có thể xóa
-        //set newData = null
         entity.clearNewData();
-
-        //lưu
         return repository.save(entity);
     }
 
@@ -76,28 +69,23 @@ public class ImplGroupCategoryService implements GroupCategoryService {
     }
 
     public GroupCategory update(Long id, GroupCategoryUpsertReq req) {
-        //kiểm tra các trường có trống hay không
         validator.validateRequired(req);
 
         //kiểm tra với id đấy thfi có tồn tại bản ghi hay không nếu không thì ném lỗi ra ngoài
         GroupCategory current = getRequired(id);
 
-        //kiểm tra trạng thái status và display
         if (current.isPublished()) {
-            //Tạo biến chưas bản ghi xem trước, tránh sửa trực tiếp object gốc
+            //tạo bản ghi preview ko thay đổi trực tiếp db
             GroupCategory preview = mapper.buildPreviewEntity(current, req);
-            //check trùng sau khi map
             validator.validateDuplicateForEntity(preview, current.getId());
 
-            //Tạo json object rỗng, chỉ chứa các field thay đổi
+            //tạo json objetc rỗng chứa bản ghi
             String patchJson = newDataHelper.buildPatchJson(current, req);
-            //kiểm tra nếu chuỗi null, rỗng hoặc chỉ có khoảng trắng thì trả ra business logic
             if (!newDataHelper.hasMeaningfulNewData(patchJson)) {
                 throw new BusinessException(ErrorCode.GC_NO_CHANGES);
             }
-            //nếu dữ liệu mới sau khi check thì map vào bảng
+            //sau khi kiểm tra hết thì map vào bảng
             current.replaceNewData(patchJson);
-            //lưu
             return repository.save(current);
         }
 
@@ -118,6 +106,7 @@ public class ImplGroupCategoryService implements GroupCategoryService {
             throw new BusinessException(ErrorCode.GC_ALREADY_PENDING);
         }
 
+        //kiểm tra dữ liệu có thay đổi không
         if (current.isPublished()) {
             if (!newDataHelper.hasMeaningfulNewData(current.getNewData())) {
                 throw new BusinessException(

@@ -19,7 +19,6 @@ public class GroupCategoryMapper {
         entity.setComponentCode(normalizeNullable(req.componentCode()));
         // Copy ngay hieu luc tu request sang entity.
         entity.setEffectiveDate(req.effectiveDate());
-        // Copy ngay het hieu luc tu request sang entity.
         entity.setEndEffectiveDate(req.endEffectiveDate());
     }
 
@@ -29,14 +28,10 @@ public class GroupCategoryMapper {
 
         // Cap nhat cac field co ban tren ban preview theo du lieu request.
         preview.setParamName(normalizeRequired(req.paramName()));
-        // Cap nhat paramValue tren ban preview.
         preview.setParamValue(normalizeRequired(req.paramValue()));
-        // Cap nhat paramType tren ban preview.
         preview.setParamType(normalizeRequired(req.paramType()));
-        // Cap nhat description tren ban preview, co xu ly trim/null.
         preview.setDescription(normalizeNullable(req.description()));
         preview.setComponentCode(normalizeNullable(req.componentCode()));
-        // Cap nhat effectiveDate tren ban preview.
         preview.setEffectiveDate(req.effectiveDate());
         preview.setEndEffectiveDate(req.endEffectiveDate());
 

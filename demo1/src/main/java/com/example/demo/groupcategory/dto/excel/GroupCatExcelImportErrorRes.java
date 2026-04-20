@@ -1,6 +1,6 @@
 package com.example.demo.groupcategory.dto.excel;
 
-public record GroupCatExcelImportError(
+public record GroupCatExcelImportErrorRes(
         int rowNumber,
         String message
 ) {

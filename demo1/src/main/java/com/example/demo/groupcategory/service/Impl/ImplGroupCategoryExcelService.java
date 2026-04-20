@@ -3,9 +3,9 @@ package com.example.demo.groupcategory.service.Impl;
 import com.example.demo.common.exception.BusinessException;
 import com.example.demo.common.exception.ErrorCode;
 import com.example.demo.groupcategory.constant.GroupCategoryConstant;
-import com.example.demo.groupcategory.dto.excel.GroupCatExcelImportError;
-import com.example.demo.groupcategory.dto.excel.GroupCatExcelImportResult;
-import com.example.demo.groupcategory.dto.excel.GroupCategoryExcelRow;
+import com.example.demo.groupcategory.dto.excel.GroupCatExcelImportErrorRes;
+import com.example.demo.groupcategory.dto.excel.GroupCatExcelImportResultRes;
+import com.example.demo.groupcategory.dto.excel.GroupCategoryExcelRowReq;
 import com.example.demo.groupcategory.dto.request.GroupCategorySearchReq;
 import com.example.demo.groupcategory.entity.GroupCategory;
 import com.example.demo.groupcategory.repository.GroupCategoryRepository;
@@ -90,11 +90,11 @@ public class ImplGroupCategoryExcelService implements GroupCategoryExcelService 
     }
 
     @Transactional
-    public GroupCatExcelImportResult importExcel(MultipartFile file, boolean submitAfterImport) {
+    public GroupCatExcelImportResultRes importExcel(MultipartFile file, boolean submitAfterImport) {
         validateFile(file);
 
-        List<GroupCatExcelImportError> errors = new ArrayList<>();
-        List<GroupCategoryExcelRow> parsedRows = new ArrayList<>();
+        List<GroupCatExcelImportErrorRes> errors = new ArrayList<>();
+        List<GroupCategoryExcelRowReq> parsedRows = new ArrayList<>();
         int totalRows = 0;
 
         try (InputStream inputStream = file.getInputStream();
@@ -116,18 +116,18 @@ public class ImplGroupCategoryExcelService implements GroupCategoryExcelService 
                 totalRows++;
 
                 try {
-                    GroupCategoryExcelRow excelRow = mapExcelRow(row, headerIndex, rowIndex + 1);
+                    GroupCategoryExcelRowReq excelRow = mapExcelRow(row, headerIndex, rowIndex + 1);
                     validateBusiness(excelRow);
                     parsedRows.add(excelRow);
                 } catch (BusinessException ex) {
-                    errors.add(new GroupCatExcelImportError(rowIndex + 1, ex.getMessage()));
+                    errors.add(new GroupCatExcelImportErrorRes(rowIndex + 1, ex.getMessage()));
                 } catch (RuntimeException ex) {
-                    errors.add(new GroupCatExcelImportError(rowIndex + 1, "Du lieu khong hop le: " + ex.getMessage()));
+                    errors.add(new GroupCatExcelImportErrorRes(rowIndex + 1, "Du lieu khong hop le: " + ex.getMessage()));
                 }
             }
 
-            List<GroupCategoryExcelRow> afterFileDuplicate = filterDuplicateInFile(parsedRows, errors);
-            List<GroupCategoryExcelRow> finalValidRows = filterDuplicateInDb(afterFileDuplicate, errors);
+            List<GroupCategoryExcelRowReq> afterFileDuplicate = filterDuplicateInFile(parsedRows, errors);
+            List<GroupCategoryExcelRowReq> finalValidRows = filterDuplicateInDb(afterFileDuplicate, errors);
 
             List<GroupCategory> entities = finalValidRows.stream()
                     .map(row -> toEntity(row, submitAfterImport))
@@ -135,7 +135,7 @@ public class ImplGroupCategoryExcelService implements GroupCategoryExcelService 
 
             saveInBatches(entities);
 
-            return new GroupCatExcelImportResult(
+            return new GroupCatExcelImportResultRes(
                     totalRows,
                     entities.size(),
                     errors.size(),
@@ -231,8 +231,8 @@ public class ImplGroupCategoryExcelService implements GroupCategoryExcelService 
         return headerIndex;
     }
 
-    private GroupCategoryExcelRow mapExcelRow(Row row, Map<String, Integer> headerIndex, int rowNumber) {
-        return new GroupCategoryExcelRow(
+    private GroupCategoryExcelRowReq mapExcelRow(Row row, Map<String, Integer> headerIndex, int rowNumber) {
+        return new GroupCategoryExcelRowReq(
                 rowNumber,
                 readString(row, headerIndex, "paramname"),
                 readString(row, headerIndex, "paramvalue"),
@@ -246,7 +246,7 @@ public class ImplGroupCategoryExcelService implements GroupCategoryExcelService 
         );
     }
 
-    private void validateBusiness(GroupCategoryExcelRow row) {
+    private void validateBusiness(GroupCategoryExcelRowReq row) {
         if (!hasText(row.paramName())) {
             throw new IllegalArgumentException("Param Name khong duoc de trong");
         }
@@ -270,18 +270,18 @@ public class ImplGroupCategoryExcelService implements GroupCategoryExcelService 
         }
     }
 
-    private List<GroupCategoryExcelRow> filterDuplicateInFile(
-            List<GroupCategoryExcelRow> rows,
-            List<GroupCatExcelImportError> errors
+    private List<GroupCategoryExcelRowReq> filterDuplicateInFile(
+            List<GroupCategoryExcelRowReq> rows,
+            List<GroupCatExcelImportErrorRes> errors
     ) {
         Map<String, Integer> firstSeenRowByKey = new HashMap<>();
-        List<GroupCategoryExcelRow> result = new ArrayList<>();
+        List<GroupCategoryExcelRowReq> result = new ArrayList<>();
 
-        for (GroupCategoryExcelRow row : rows) {
+        for (GroupCategoryExcelRowReq row : rows) {
             String key = buildUniqueKey(row.paramName(), row.paramValue(), row.paramType());
 
             if (firstSeenRowByKey.containsKey(key)) {
-                errors.add(new GroupCatExcelImportError(
+                errors.add(new GroupCatExcelImportErrorRes(
                         row.rowNumber(),
                         "Trung du lieu trong file voi dong " + firstSeenRowByKey.get(key)
                 ));
@@ -295,28 +295,28 @@ public class ImplGroupCategoryExcelService implements GroupCategoryExcelService 
         return result;
     }
 
-    private List<GroupCategoryExcelRow> filterDuplicateInDb(
-            List<GroupCategoryExcelRow> rows,
-            List<GroupCatExcelImportError> errors
+    private List<GroupCategoryExcelRowReq> filterDuplicateInDb(
+            List<GroupCategoryExcelRowReq> rows,
+            List<GroupCatExcelImportErrorRes> errors
     ) {
         if (rows.isEmpty()) {
             return rows;
         }
 
         Set<String> paramNames = rows.stream()
-                .map(GroupCategoryExcelRow::paramName)
+                .map(GroupCategoryExcelRowReq::paramName)
                 .filter(this::hasText)
                 .map(this::normalize)
                 .collect(Collectors.toSet());
 
         Set<String> paramValues = rows.stream()
-                .map(GroupCategoryExcelRow::paramValue)
+                .map(GroupCategoryExcelRowReq::paramValue)
                 .filter(this::hasText)
                 .map(this::normalize)
                 .collect(Collectors.toSet());
 
         Set<String> paramTypes = rows.stream()
-                .map(GroupCategoryExcelRow::paramType)
+                .map(GroupCategoryExcelRowReq::paramType)
                 .filter(this::hasText)
                 .map(this::normalize)
                 .collect(Collectors.toSet());
@@ -327,11 +327,11 @@ public class ImplGroupCategoryExcelService implements GroupCategoryExcelService 
                 .map(item -> buildUniqueKey(item.getParamName(), item.getParamValue(), item.getParamType()))
                 .collect(Collectors.toSet());
 
-        List<GroupCategoryExcelRow> result = new ArrayList<>();
-        for (GroupCategoryExcelRow row : rows) {
+        List<GroupCategoryExcelRowReq> result = new ArrayList<>();
+        for (GroupCategoryExcelRowReq row : rows) {
             String key = buildUniqueKey(row.paramName(), row.paramValue(), row.paramType());
             if (existingKeys.contains(key)) {
-                errors.add(new GroupCatExcelImportError(
+                errors.add(new GroupCatExcelImportErrorRes(
                         row.rowNumber(),
                         "Du lieu da ton tai trong he thong"
                 ));
@@ -343,7 +343,7 @@ public class ImplGroupCategoryExcelService implements GroupCategoryExcelService 
         return result;
     }
 
-    private GroupCategory toEntity(GroupCategoryExcelRow row, boolean submitAfterImport) {
+    private GroupCategory toEntity(GroupCategoryExcelRowReq row, boolean submitAfterImport) {
         GroupCategory entity = new GroupCategory();
         entity.setParamName(trimToNull(row.paramName()));
         entity.setParamValue(trimToNull(row.paramValue()));

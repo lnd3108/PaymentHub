@@ -2,7 +2,7 @@ package com.example.demo.groupcategory.dto.excel;
 
 import java.time.LocalDate;
 
-public record GroupCategoryExcelRow(
+public record GroupCategoryExcelRowReq(
         int rowNumber,
         String paramName,
         String paramValue,

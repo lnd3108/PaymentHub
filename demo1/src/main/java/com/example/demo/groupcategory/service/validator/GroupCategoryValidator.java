@@ -14,14 +14,10 @@ import static com.example.demo.common.util.StringUtil.normalizeRequired;
 @Component
 @RequiredArgsConstructor
 public class GroupCategoryValidator {
-    //Repo dùng để kiểm tra bản ghi trùng trong database
     private final GroupCategoryRepository repository;
 
-    //kiểm tra các trường có trôngs hay không nếu trống thì báo INVALID
     public void validateRequired(GroupCategoryUpsertReq req) {
-        //KIểm tra paramname có được gửi lên hay không
         if (isBlank(req.paramName())) {
-            //nếu thiếu paramname thì ném lỗi request không hợp lệ
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "paramName không được để trống");
         }
         if (isBlank(req.paramValue())) {
@@ -40,13 +36,11 @@ public class GroupCategoryValidator {
         }
     }
 
+    //kiểm tra dữ liệu sau khi map
     public void validateRequiredEntity(GroupCategory entity) {
-        //Kiểm tra entity sau khi map xem dữ liệu nội bộ có đủ paramName hay không
         if (isBlank(entity.getParamName())) {
-            //Paramname rỗng thì entity không hợp lệ
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "paramName không được để trống");
         }
-        //Kiểm tra entity khi mao xme dữ liệu nội bộ có đủ paramName hay không
         if (isBlank(entity.getParamValue())) {
             throw new BusinessException(ErrorCode.INVALID_REQUEST, "paramValue không được để trống");
         }
@@ -64,16 +58,16 @@ public class GroupCategoryValidator {
     }
 
     public void validateDuplicateForUpsert(GroupCategoryUpsertReq req, Long excludeId) {
-        //Normalize các field khóa để tránh trùng do khác biệt khoảng trắng/ chuẩn hóa
+        //check các field khóa để tránh trùng do khác biệt khoảng trắng/ chuẩn hóa
         String paramName = normalizeRequired(req.paramName());
         String paramValue = normalizeRequired(req.paramValue());
         String paramType = normalizeRequired(req.paramType());
 
-        //Nếu excludeId null thì kiểm tra duplicate cho create, ngược lại thì bỏ qua bản ghi đang update
+        //Nếu id null thì kiểm tra duplicate cho create, nếu không bỏ qua bản ghi
         boolean exists = excludeId == null
                 ? repository.existsByParamNameAndParamValueAndParamType(paramName, paramValue, paramType)
                 : repository.existsByParamNameAndParamValueAndParamTypeAndIdNot(paramName, paramValue, paramType, excludeId);
-        //Nếu đã tồn tại bản ghi cũng bỏ lỗi business chặn thao tác upsert
+        //nếu đã có bản ghi thì chặn upsert
         if (exists) {
             throw new BusinessException(
                     ErrorCode.GC_DUPLICATE,
@@ -96,7 +90,7 @@ public class GroupCategoryValidator {
                 normalizeRequired(entity.getParamType()),
                 excludeId
         );
-        //nếu đã tồn tại bản ghi khác thì ném lỗi business
+        //nếu tồn tại thì trả lỗi
         if (exists) {
             throw new BusinessException(
                     ErrorCode.GC_DUPLICATE,

@@ -19,13 +19,12 @@ import java.sql.Timestamp;
 import java.util.List;
 
 @Repository
-@Transactional // các method được bao bọc bởi transactional nếu có lỗi thì có thể rollback
+@Transactional
 public class GroupCategoryNativeRepository {
 
-    @PersistenceContext //inject entity mânger vào đây
-    private EntityManager em; // đối tượng chính để chạy native query như SELECT, INSERT, UPDATE, ...
+    @PersistenceContext
+    private EntityManager em;
 
-    //Chuỗi select cố định
     private static final String BASE_SELECT = """
             SELECT
                 ID,
@@ -43,18 +42,13 @@ public class GroupCategoryNativeRepository {
             FROM PMH_GROUP_CATEGORY
             """;
 
-    //Sql nền đếm tôngt bản ghi
     private static final String BASE_COUNT = """
             SELECT COUNT(1)
             FROM PMH_GROUP_CATEGORY
             """;
 
-    //hàm tạo mới bản ghi
     public Long create(GroupCategoryCreateReq req) {
-        //tạo id mới tự động
         Long id = getNextId();
-
-        //insert bản ghi mới vào bảng
         String sql = """
                 INSERT INTO PMH_GROUP_CATEGORY (
                     ID,
@@ -85,10 +79,9 @@ public class GroupCategoryNativeRepository {
                 )
                 """;
 
-        //gán giá trị vào field
-        em.createNativeQuery(sql) //khởi tạo querry native SQL
-                .setParameter("id", id)//gán giá trị vào từng placeholder trong câu lệnh sql
-                .setParameter("paramName", req.paramName()) // req.paramName lấy dữ liệu từ req
+        em.createNativeQuery(sql)
+                .setParameter("id", id)
+                .setParameter("paramName", req.paramName())
                 .setParameter("paramValue", req.paramValue())
                 .setParameter("paramType", req.paramType())
                 .setParameter("description", req.description())
@@ -101,10 +94,9 @@ public class GroupCategoryNativeRepository {
                 .setParameter("endEffectiveDate", req.endEffectiveDate())
                 .executeUpdate();
 
-        return id; // trả ra id sau khi tạo mới bản ghi
+        return id;
     }
 
-    //Hàm lấy tất cả bản ghi
     public PageResponse<GroupCategory> getAll(int page, int size) {
         //lấy danh sách tất cả bản ghi có phân trang
         String sql = BASE_SELECT + " ORDER BY ID DESC";
@@ -112,16 +104,10 @@ public class GroupCategoryNativeRepository {
         dataQuery.setFirstResult(page * size); //bỏ qua số dòng của trang trước
         dataQuery.setMaxResults(size); // lấy tối đa size cho trang hiện tại
 
-        //chạy querry để lấy dữ liệu
         @SuppressWarnings("unchecked")
-                // kết quả: native sql không tự map sang entity
         List<Object[]> rows = dataQuery.getResultList();
 
-        //querry đếm tổng banr ghi
-        //trả đúng 1 giá trị
         long total = ((Number) em.createNativeQuery(BASE_COUNT).getSingleResult()).longValue();
-        //tính tổng số trang
-        //đóng gói thành pageResponse
         return buildPageResponse(rows, page, size, total, "id", "desc");
     }
 
@@ -130,19 +116,14 @@ public class GroupCategoryNativeRepository {
 
         List<Object[]> rows = em.createNativeQuery(sql)
                 .setParameter("id", id)
-                .getResultList(); //Dùng getResultList() thay vì getSingleResult() để tránh lỗi nếu không có dữ liệu.
-
+                .getResultList();//tránh lỗi nếu không có dữ liệu
         if (rows.isEmpty()) {
             throw new BusinessException(ErrorCode.GC_NOT_FOUND, "Khong tim thay ban ghi voi id = " + id);
         }
-        //lấy dòng đầu tiên trong kết quả
-        //gọi mapRow để convert từ Object[] sang groupCategory
         return mapRow(rows.get(0));
     }
 
-    //hàm cập nhật bản ghi
     public Long update(Long id, GroupCategoryUpdateReq req) {
-        //khởi tạo câu lệnh update
         String sql = """
                 UPDATE PMH_GROUP_CATEGORY
                 SET
@@ -160,8 +141,7 @@ public class GroupCategoryNativeRepository {
                 WHERE ID = :id
                 """;
 
-        int updated = em.createNativeQuery(sql) //khởi tạo native sql
-                //gán giá trị cho từng placehoder trong câu lệnh sql
+        int updated = em.createNativeQuery(sql)
                 .setParameter("id", id)
                 .setParameter("paramName", req.paramName())
                 .setParameter("paramValue", req.paramValue())
@@ -174,7 +154,7 @@ public class GroupCategoryNativeRepository {
                 .setParameter("newData", req.newData())
                 .setParameter("effectiveDate", req.effectiveDate())
                 .setParameter("endEffectiveDate", req.endEffectiveDate())
-                .executeUpdate();// thưcj thi câu lệnh
+                .executeUpdate();
 
         if (updated == 0) {
             throw new BusinessException(ErrorCode.GC_NOT_FOUND, "Khong tim thay ban ghi de update, id = " + id);
@@ -183,16 +163,15 @@ public class GroupCategoryNativeRepository {
         return id;
     }
 
-    //xóa bản ghi
     public void delete(Long id) {
         String sql = """
                 DELETE FROM PMH_GROUP_CATEGORY
                 WHERE ID = :id
                 """;
 
-        int deleted = em.createNativeQuery(sql) // khơi tạo querry native sql
-                .setParameter("id", id) //gán gia trị của id
-                .executeUpdate(); //thưcj thi câu lệnh
+        int deleted = em.createNativeQuery(sql)
+                .setParameter("id", id)
+                .executeUpdate();
 
         if (deleted == 0) {
             throw new BusinessException(ErrorCode.GC_NOT_FOUND, "Khong tim thay ban ghi de xoa, id = " + id);
@@ -200,33 +179,24 @@ public class GroupCategoryNativeRepository {
     }
 
     public PageResponse<GroupCategory> search(GroupCategorySearchReq req, int page, int size) {
-        //tạo hàm search có phân trang
-        //tạo where 1 = 1 đẻr nối thêm điều kiện and cho dêx
+        //tạo where 1 = 1 đẻr nối thêm điều kiện and cho dễ
         StringBuilder where = new StringBuilder(" WHERE 1 = 1");
-        //nếu request có giá trị thì nối điều kiện vào where
         appendLikeCondition(where, req.paramName(), "PARAM_NAME", "paramName");
         appendLikeCondition(where, req.paramValue(), "PARAM_VALUE", "paramValue");
         appendLikeCondition(where, req.paramType(), "PARAM_TYPE", "paramType");
         appendInCondition(where, req.status(), "STATUS", "status");
         appendInCondition(where, req.isActive(), "IS_ACTIVE", "isActive");
 
-        //querry lấy dữ liệu thật
         String sql = BASE_SELECT + where + " ORDER BY ID DESC";
-        //querry đếm tổng bản ghi thoa mãn điều kiện
         String countSql = BASE_COUNT + where;
 
-        //khởi tạo 1 query lấy danh sách
-        //1 querry đếm tổng
         Query dataQuery = em.createNativeQuery(sql);
         Query countQuery = em.createNativeQuery(countSql);
-        setSearchParams(dataQuery, req); //bind parametter cho cả data và count
+        setSearchParams(dataQuery, req);
         setSearchParams(countQuery, req);
-        dataQuery.setFirstResult(page * size); //phân trang cho querru data
+        dataQuery.setFirstResult(page * size);
         dataQuery.setMaxResults(size); // count không cần phân trang vì chỉ trả ra 1 giá trị
 
-        //lấy data trang hiện tại
-        //lấy tổng bản ghi
-        //build data phân trang
         @SuppressWarnings("unchecked")
         List<Object[]> rows = dataQuery.getResultList();
 
@@ -234,7 +204,6 @@ public class GroupCategoryNativeRepository {
         return buildPageResponse(rows, page, size, total, "id", "desc");
     }
 
-    //hàm update riêng cho workflow
     public void updateWorkflowState(Long id, Integer status, Integer isDisplay, String newData) {
         String sql = """
                 UPDATE PMH_GROUP_CATEGORY
@@ -251,7 +220,6 @@ public class GroupCategoryNativeRepository {
                 .setParameter("isDisplay", isDisplay)
                 .setParameter("newData", newData)
                 .executeUpdate();
-        //gán giá trị rồi chạy update
         if (updated == 0) {
             throw new BusinessException(ErrorCode.GC_NOT_FOUND, "Khong tim thay ban ghi voi id = " + id);
         }
